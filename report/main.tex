@@ -1,0 +1,317 @@
+%% Based on  LaTeX template for ICML 2017 - example_paper.tex at 
+%%  https://2017.icml.cc/Conferences/2017/StyleAuthorInstructions
+
+\documentclass{article}
+\input{mlp2018_includes}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\sg}{sg}
+\DeclareMathOperator{\VQ}{VQ}
+
+%% You probably do not need to change anything above this comment
+
+\def\projectTitle{Improving End-to-End Voice Conversion using Discrete Latent Representations and Learnable Reconstruction Loss}
+\def\groupNumber{G086}
+\def\studentNumbers{s1873447, s1308389, s1837038}
+
+\begin{document} 
+
+\twocolumn[
+\mlptitle{\projectTitle: Interim Report}
+
+\centerline{\groupNumber\ (\studentNumbers)}
+
+\vskip 7mm
+]
+
+\begin{abstract} 
+The abstract should be a few sentences (100--200 words) long,  providing a concise summary of the contents of your report including the key research question(s) addressed, the methods explored, the data used, and the findings of the experiments.
+\end{abstract} 
+
+\section{Introduction}
+\label{sec:intro}
+% This document provides a template for the MLP coursework 3 interim report.  This template structures the report into sections, which you may use,or you can structure it differently if you wish.  If you want to use subsections within a section that is fine. In this template the text in each section will include a very brief outline of what you should include in each section, along with some practical LaTeX examples (for example figures, tables, algorithms).  Your document should be no longer than \textbf{five pages},  with an additional page (or more!) allowed for references.
+
+% You should give a broad introduction to the project, including citations to related work. Your aim here is to explain why the project is addressing an interesting topic, and how it relates to things that have been done in the area.
+
+% You should make clear what are the aims and objectives of the project, what are the research questions being addressed.  Be precise. In this section you should make clear what the project's contribution is: how is it different to what is already done. 
+
+% The interim report should state the objectives of the project, which are related to the research questions. What experiments do you plan to carry out? You can differentiate between core objectives, and optional objectives you hope to achieve if things go well. The conclusions in your final report should relate to these objectives.
+
+% Use bibtex to organise your references -- in this case the references are in the file \verb+example-refs.bib+.  Here is a an example reference \citep{VandenOord2017}.  
+
+The human voice conveys a multitude of non- or para-linguistic information about a speaker's identity, such as their age, gender, where they come from, or even their physical appearance~\citep{Kreiman2011}. Voice conversion (VC) is a speech processing field aiming to develop tools for transforming a person's (or a speech-synthesis system) speech to another target person's voice, without changing linguistic content~\citep{Abe1990}. Applications include customised text-to-speech systems, speech-to-speech translation, film dubbing, speaker anonymisation, voice avatars in games, or speech-generating devices for people with speech impairments that aim to recreate the voices of their owners. Such systems are either trained on \textit{parallel} data, where source and target speakers utter the same sentences, or \textit{non-parallel} data where the sentences differ. Traditionally, approaches to parallel VC use time-frame alignment to generate labelled training data, while non-parallel VC may be approached with clustering methods to produce pseudo-parallel data or by using a conversion function that was learned from parallel data~\citep{Lorenzo2018}. More recently, however, VC has been approached as an unsupervised learning problem, where generative models can be trained end-to-end and do not require parallel data or clustering of source and target speakers utterances to perform VC. 
+
+Generative modelling has recently made substantial advances in various domains, particularly images~\citep{Karras2018}, audio~\citep{Oord2016} or video~\citep{Vondrick2016}. While there are a number of different approaches to generative modelling, two frequency used methods are variational autoencoders (VAE)~\citep{Kingma2013} and generative adversarial networks (GANs) ~\citep{Goodfellow2014}.
+VAE provide a probabilistic interpretation of the latent space, as the lower-dimensional representation of the input is represented as a probability distribution, while sampled outputs tend to be ``blurry'' (in the case of images). GANs model an arbitrary density indirectly to draw samples, but do not provide a probabilistic representation of the latent space. 
+VC is an application where the representation of latent variables plays a particularly important role.
+
+While latent variables are usually represented in a continuous space, many phenomena, such as phonemes, are better described in a discrete space, as argued e.g.  by~\cite{VandenOord2017}. Including discrete layers into a neural network, however, is not straight-forward, as no gradient can be computed directly. Vector-quantised variational autoencoders (VQ-VAE)~\cite{VandenOord2017} provide an extension to VAE by incorporating vector quantisation to obtain discrete latent variables. Evaluations show promising performance on image and video generation as well as voice conversion generation tasks~\cite{VandenOord2017}. Furthermore, the authors were able to show that the discrete latent variables closely mapped to phonemes in a many-to-one fashion. 
+
+Previous research has aimed to combine the strengths of VAE with those of GAN, in models such as VAE-GAN~\cite{Larsen2015} or AAE ~\cite{Makhzani2015}. Here, a GAN is used to provide a learned similarity metric for the VAE. This aims to overcome the problem of element-wise metrics, which may not correspond to human judgements, as humans rather perceive higher-level features, rather than pixel-wise attributes ~\citep{Larsen2015}. 
+
+Regular GAN are known to suffer from training instability, can hence be difficult to train. Wasserstein GAN (W-GAN) provide a modification of GAN, where the \textit{disciminator} is replaced with a \textit{critic} ~\citep{Arjovsky2017}. \cite{Hsu2017} have demonstrated the use of a Wasserstein generative adversarial network (VAW-GAN) to perform a VC task on non-parallel data, which outperformed a simple VAE. 
+
+In the present work, we aim to combine recent developments in unsupervised representation learning to perform end-to-end VC on non-parallel data. More specifically, we investigate whether VC performance can be improved by combining the discrete representation from VQ-VAE with a GAN to model the target distribution more accurately. Additionally, we address the question whether W-GAN can provide advantages over regular GAN in this scenario, in terms of training stability. 
+
+
+Outline of the report.
+
+%VQ-VAE with learned similarity metric
+
+%VAW-GAN\cite{Hsu2017}
+
+%Phonetics(what we mostly care about at the moment), prosody(), etc. 
+
+%Discrete (many to one mapping of latent variables to phonemes) vs. continuous latent representations. 
+
+\begin{figure*}[tb]
+\vskip 5mm
+\begin{center}
+\centerline{\includegraphics[width=0.95\textwidth]{report/figures/model.pdf}}
+\caption{Architecture was mainly based on VQ-VAE with an addition of GAN. On the left we show the standard VQ-VAE architecture for VC. The embedding dictionary of the far-left is used both when producing the discrete latents $\mathbf{z}_q$ and mapping them back to vectors $\mathbf{z}_d$ for an input to the generator. The generator receives a one-hot encoded speaker identity, therefore the encoder can filter out the speaker-dependent features and only pertain the linguistic content. The red arrow also shows how the gradient bypasses the discrete representations $\mathbf{z}_q$.
+On the right, we also see the discriminator model, which takes both real data samples $\mathbf{x}$ and reconstructions from the generator $\mathbf{\tilde x}$ in order to improve the style of the generated content output.}
+\label{fig:model-architecture}
+\end{center}
+\vskip -5mm
+\end{figure*} 
+
+\section{Methodology}
+% Explain clearly the technical methodology, the models and algorithms that are used.  Approaches that were covered in the lectures can be described briefly, but if you are using modifications to such approaches make sure these are clearly described.    Again use citations to the literature.
+
+% If you present algorithms, you can use the \verb+algorithm+ and \verb+algorithmic+ environments to format pseudocode (for instance, Algorithm~\ref{alg:example}). These require the corresponding style files, \verb+algorithm.sty+ and \verb+algorithmic.sty+ which are supplied with this package. 
+
+% \begin{algorithm}[ht]
+% \begin{algorithmic}
+%   \STATE {\bfseries Input:} data $x_i$, size $m$
+%   \REPEAT
+%   \STATE Initialize $noChange = true$.
+%   \FOR{$i=1$ {\bfseries to} $m-1$}
+%   \IF{$x_i > x_{i+1}$} 
+%   \STATE Swap $x_i$ and $x_{i+1}$
+%   \STATE $noChange = false$
+%   \ENDIF
+%   \ENDFOR
+%   \UNTIL{$noChange$ is $true$}
+% \end{algorithmic}
+%   \caption{Bubble Sort}
+%   \label{alg:example}
+% \end{algorithm}
+In unaligned corpora voice conversion task we have a dataset of recorded utterances from a set of speakers where the linguistic content of the recordings may not be matched.
+In such problems, VC techniques using recurrent encoder-decoder networks do not usually work well.
+In this work, we assume that the spectral frames $\mathbf{x}$ of the recordings come from a true probability density, and that the densities for the source and target speakers are $p_s$ and $p_t$. The VC task is then to learn a conditional distribution $q_t$ on $\mathbf{x}_s \sim p_s$ such that $q_t \approx p_t$.
+Moreover, reflecting on the traditional VC pipelines, we assume that speech can be encoded as a discrete low-dimensional code, namely a vector of phonemes. In the rest of this section we propose an end-to-end VC method takes advantage of this interpretation.
+%The most popular methods for approximating distributions are Variational Autoencoders (VAE) \citep{Kingma2013} and Generative Adversarial Networks (GAN) \citep{Goodfellow2014}. Both of these techniques are key in our model and the rest of this section is dedicated to describe how we combined them for unaligned corpora VC. 
+
+\subsection{VQ-VAE for learning discrete latents}
+Variational Autoencoders (VAE)~\cite{Kingma2013} are widely popular for their ability to learn unobserved low-dimensional latent distributions $p_z$ of observed high-dimensional data $p_x$. VAEs are two-part models consisting of: an \textit{encoder} $E$  that approximates the conditional distribution $p(\mathbf{z}|\mathbf{x})$ with a parameterised model, and \textit{decoder} that generates samples from the original distribution $p_x$ given samples from $\mathbf{z}$, namely $p(\mathbf{x}|\mathbf{z})$.
+In our work, we will refer to the decoder as \textit{generator} $G$ since it is tasked to synthesise realistic data samples, as we will see in the next section.
+The latent distributions in standard VAEs are typically diagonal-covariance Gaussian. 
+However, in VC we prefer to filter out most of the speaker-related variance and noise, and focus only on the discrete linguistic content, i.e. phonemes, that pertains the most relevant information for the task. 
+
+In order to take advantage of discrete speech interpretation we use Vector-Quantised VAE (VQ-VAE)~\citep{VandenOord2017} where a discrete embedding layer ($\VQ$) is inserted between the encoder and generator.
+The embedding layer contains a dictionary of $K$ $D$-dimensional real-valued embedding vectors $\mathbf{e}_k$, where $k = 1..K$ and $K$ is the number of discrete values allowed by the dictionary.
+The $\VQ$ layer takes the output from the encoder $\mathbf{z}_e = E({\mathbf{x}})$ and calculates the discrete latent value $z_q=k$ by a nearest neighbour look-up in the dictionary of embeddings, where $k$ is the index of the embedding vector $\mathbf{e}_k$ that minimises distance to $\mathbf{z}_e$:
+\begin{equation}
+    \label{eq:nearest-neighbour}
+    z_q = k = \argmin_i || \mathbf{z}_e - \mathbf{e}_i ||_2
+\end{equation}
+Then the closest embedding vector $\mathbf{e}_k$ (the one that minimises the objective above) is passed down as input $\mathbf{z}_g = \mathbf{e}_k = \VQ(\mathbf{z}_e)$ to the generator network. For simplicity, the example above assumed that the input to the $\VQ$ layer $\mathbf{z}_e$ was a $D$-dimensional vector mapped to a single latent variable $z_q$. 
+However, in general the output can be any tensor whose channel is $D$-dimensional, then the nearest-neighbour quantization described in Eq.~\ref{eq:nearest-neighbour} is applied to each element along the channel dimension.
+In the VC task it will be a $Z \times D$ tensor, where $Z$ is the length of the down-sampled recording.
+% (from paper) VQ layer can be viewed as a particular type of non-linearity.
+
+\begin{figure}[tb]
+\vskip 5mm
+\begin{center}
+\centerline{\includegraphics[width=0.8\columnwidth]{report/figures/embedding.pdf}}
+\caption{The figure shows how the straight-through estimator gradient can help the encoder to produce samples from a different category in the next forward pass.}
+\label{fig:vq-vae-embedding}
+\end{center}
+\vskip -5mm
+\end{figure} 
+
+Generally, training models with discrete layers is difficult since there is no gradient. However, since the gradient needs to propagate through only a single discrete layer, VQ-VAE can use a straight-through gradient estimator copying the gradients from the generator input $\mathbf{z}_g$ to encoder output $\mathbf{z}_e$ bypassing the $VQ$ layer. The signs of the straight-through gradient estimator are guaranteed to be correct when propagating through a single layer \citep{Bengio2013} and should contain useful information for training the outputs of the encoder as illustrated on the right side of the Figure~\ref{fig:vq-vae-embedding}.
+
+The VQ-VAE loss function comprises of three terms -- reconstruction loss, vector quantisation (embedding training) objective, and commitment loss:
+\begin{equation}
+    \label{eq:vq-vae-rec-loss}
+    \mathcal{L}_{\text{rec}} = \log(p(\mathbf{x}|E(\mathbf{x})))
+\end{equation}
+\begin{equation}
+    \label{eq:vq-vae-vq-loss}
+    \mathcal{L}_{\VQ} = ||\sg[E(\mathbf{x})] - \mathbf{e}||_2^2
+\end{equation}
+\begin{equation}
+    \label{eq:vq-vae-commit-loss}
+    \mathcal{L}_{\text{com}} = \beta||E(\mathbf{x}) - \sg[\mathbf{e}]||^2_2
+\end{equation}
+The reconstruction loss in Eq.~\ref{eq:vq-vae-rec-loss} optimises the encoder and generator model parameters to pertain the contents of the original input, however due to the straight-through gradient estimation the embedding vectors $\mathbf{e}$ of the $\VQ$ layer are not updated. 
+In order to train the embedding vectors the vector quantisation objective in Eq.~\ref{eq:vq-vae-vq-loss} is added to directly trains the embedding vectors $\mathbf{e}$ to minimise the $l_2$ distance to the encoder output $\mathbf{z}_e$. 
+Moreover, because the embedding space is dimensionless (it is not bound to any physical quantity) it can grow arbitrarily if the encoder does not train as fast as the embedding vectors. Therefore, the commitment loss in Eq.~\ref{eq:vq-vae-commit-loss} is added to constrain the growth of the embedding space. 
+Finally, despite the term "variational" in its name, the loss does not contain a variational loss objective because the prior $p(\mathbf{z})$ is assumed uniform and the KL-divergence term simplifies to a constant $\log K$.
+
+The $\sg(.)$ in Eq.~\ref{eq:vq-vae-vq-loss} and \ref{eq:vq-vae-commit-loss} is a stop-gradient operator defined as:
+\begin{equation}
+    \sg(\mathbf{x}) = 
+    \begin{cases}
+    \mathbf{x},  & \text{forward pass}\\
+    \mathbf{0},  & \text{backward pass}
+    \end{cases}
+\end{equation}
+
+\subsection{Improving the generator with adversarial loss}
+The output of VAEs in image and speech domains is typically blurry due to the element-wise $l_2$ reconstruction loss, which is equivalent to maximising the log-likelihood of data $p(\mathbf{x}|\mathbf{\hat x})$ and assuming it is Gaussian. However, real data such as images and speech are usually multimodal and therefore the Gaussianity assumption is too general. In particular, in VC task we would like the output of the VQ-VAE match the probability distribution of spectral frames of the target speaker.
+
+Generative Adversarial Networks (GAN) \cite{Goodfellow2014} have become particularly popular due to their ability to train a generator that can synthesise samples from an arbitrarily complex and unknown distributions. 
+The main components of a GAN are the \textit{generator} $G$, \textit{discriminator} $D$, and adversarial loss. 
+The purpose of the generator is to learn a transformation from a prior "noise" distribution $p_z$ to the true data distribution $p_x$. 
+The discriminator takes the output from the generator $\mathbf{\tilde x}$ and examples from the true dataset $\mathbf{x}$, and is tasked to output a single scalar corresponding to the probability that its input came from the real dataset rather than the output from the generator, which is considered a "fake" sample. The training objective called adversarial loss is described by the below equation:
+\begin{equation}
+    \mathcal{L}_{adv} = \log(D(\mathbf{x})) + \log(1-D(G(\mathbf{z}_g))),
+\end{equation}
+where in our work the latents $\mathbf{z}_g$ are the encoded and quantised versions of input, $\mathbf{z}_g = \VQ(E(\mathbf{x}))$.
+
+In our work, the generator of the GAN is the same network as the decoder in VQ-VAE.
+We employ GAN framework in order to train the generator(decoder) more directly to match the target distribution more accurately via adversarial loss.
+
+
+\subsection{Improving the generator with learned similarity metric}
+To loosen the Gaussianity assumption about the true dataset implied by element-wise loss we here consider an alternative reconstruction error. We first assume that the discriminator must learn a useful internal representation of the input data in order to distinguish real from fake samples. We then adapt learnable feature-wise reconstruction metric from \citet{Larsen2015} to replace the reconstruction error in Eq.~\ref{eq:vq-vae-rec-loss}.
+
+The metric introduces a Gaussian observation model on the hidden representations of the discriminator:
+\begin{equation}
+    \label{eq:similarity-metric}
+    p(D_l(\mathbf{x})|\mathbf{z}_g) = \mathcal{N}(D_l(\mathbf{x})|D_l(G(\mathbf{z}_g)), \mathbf{I}),
+\end{equation}
+where $D_l(\mathbf{x})$ is the hidden representation of input $\mathbf{x}$ in layer $l$ of the discriminator, and $\mathbf{z}_g$ is the input to the generator for input $\mathbf{x}$. 
+The reconstruction term in Eq.~\ref{eq:vq-vae-rec-loss} is then replaced with the feature-wise similarity error shown in Eq.~\ref{eq:similarity-error}, thus resulting in content-wise better reconstructions.
+\begin{equation}
+    \label{eq:similarity-error}
+    \mathcal{L}_{\text{sim}} = - \mathbb{E}_{q(\mathbf{z_g}|\mathbf{x})}[\log p(D_l(\mathbf{x})|\mathbf{z}_g)]
+\end{equation}
+It is important that the error signal from Eq.~\ref{eq:similarity-metric} is only used to train the VQ-VAE but not the discriminator as this would otherwise collapse the gradients to 0 \citep{Larsen2015}.
+
+
+\subsection{W-GAN}
+Previous work has explored the instability that is typically observed when training GANs~\cite{arjovsky2017towards}.
+They state that this instability comes from the training procedure as it allows for...
+Wasserstein GANs (W-GANs) provide an alternate
+
+\subsection{Final model}
+Our final model stems directly from a combination of methods introduced in the previous sections and is presented in Figure~\ref{fig:model-architecture}. The model leverages discrete latent variable interpretation of speech data through vector quantisation, employs an adversarial loss to improve the realistic style of synthesised reconstructions, and uses a learned similarity metric to pertain the linguistic contents of the input data in the generated outputs. The complete loss function is as follows:
+\begin{equation}
+    \mathcal{L} = \mathcal{L}_{\text{sim}} + \mathcal{L}_{\VQ} + \mathcal{L}_{\text{com}} + \mathcal{L}_{\text{adv}}
+\end{equation}
+
+We note that the speaker identity code is provided directly to the generator as shown in Figure~\ref{fig:model-architecture}, thus the encoder is allowed to filter out speaker-dependent features in spite of keeping only the linguistic content. Voice conversion can then be achieved by providing the target speaker identity code to the generator and latent code $\mathbf{z}_g$ from the source speaker.
+
+% To create figure (just made a start so far - the tool seems quite cool): https://drive.google.com/file/d/1AvEt7xVth1SRBc0uVrzy1jWwvI600KeH/view?usp=sharing
+
+\section{Related work}
+
+
+\section{Experiments}
+\label{sec:expts}
+% The interim report should include some experimental results.  In most cases these will be baseline experiments.  Baseline experiments refer to experiments conducted using well-understood approaches against which you can compare later results.  For example if you were exploring a new data set, the baselines might include linear networks and deep neural networks with different numbers of hidden layers;  if you were exploring a different approach to regularisation, then the baselines would include no regularisation, and conventional techniques such as L1, L2, and dropout.  You can include the results of any further experiments in your interim report.
+
+% Present the experimental results clearly and concisely.  Usually a result is in comparison or contrast to a result from another approach please make sure that these comparisons/contrasts are clearly presented.  You can facilitate comparisons either using graphs with multiple curves or (if appropriate, e.g. for accuracies) a results table. You need to avoid having too many figures, poorly labelled graphs, and graphs which should be comparable but which use different axis scales. A good presentation will enable the reader to compare trends in the same graph -- each graph should summarise the results relating to a particular research (sub)question.
+
+% There is no need to include code or specific details about the compute environment.
+
+% As before, your experimental sections should include graphs (for instance, figure~\ref{fig:sample-graph}) and/or tables (for instance, table~\ref{tab:sample-table})\footnote{These examples were taken from the ICML template paper.}, using the \verb+figure+ and \verb+table+ environments, in which you use \verb+\includegraphics+ to include an image (pdf, png, or jpg formats).  Please export graphs as 
+% \href{https://en.wikipedia.org/wiki/Vector_graphics}{vector graphics}
+% rather than \href{https://en.wikipedia.org/wiki/Raster_graphics}{raster
+% files} as this will make sure all detail in the plot is visible.
+% Matplotlib supports saving high quality figures in a wide range of
+% common image formats using the
+% \href{http://matplotlib.org/api/pyplot_api.html\#matplotlib.pyplot.savefig}{\texttt{savefig}}
+% function. \textbf{You should use \texttt{savefig} rather than copying
+% the screen-resolution raster images outputted in the notebook.} An
+% example of using \texttt{savefig} to save a figure as a PDF file (which
+% can be included as graphics in a \LaTeX document is given in the coursework document.
+
+% If you need a figure or table to stretch across two columns use the \verb+figure*+ or \verb+table*+ environment instead of the \verb+figure+ or \verb+table+ environment.  Use the \verb+subfigure+ environment if you want to include multiple graphics in a single figure.
+
+% \begin{figure}[tb]
+% \vskip 5mm
+% \begin{center}
+% \centerline{\includegraphics[width=\columnwidth]{icml_numpapers}}
+% \caption{Historical locations and number of accepted papers for International
+%   Machine Learning Conferences (ICML 1993 -- ICML 2008) and
+%   International Workshops on Machine Learning (ML 1988 -- ML
+%   1992). At the time this figure was produced, the number of
+%   accepted papers for ICML 2008 was unknown and instead estimated.}
+% \label{fig:sample-graph}
+% \end{center}
+% \vskip -5mm
+% \end{figure} 
+
+% \begin{table}[tb]
+% \vskip 3mm
+% \begin{center}
+% \begin{small}
+% \begin{sc}
+% \begin{tabular}{lcccr}
+% \hline
+% \abovespace\belowspace
+% Data set & Naive & Flexible & Better? \\
+% \hline
+% \abovespace
+% Breast    & 95.9$\pm$ 0.2& 96.7$\pm$ 0.2& $\surd$ \\
+% Cleveland & 83.3$\pm$ 0.6& 80.0$\pm$ 0.6& $\times$\\
+% Glass2    & 61.9$\pm$ 1.4& 83.8$\pm$ 0.7& $\surd$ \\
+% Credit    & 74.8$\pm$ 0.5& 78.3$\pm$ 0.6&         \\
+% Horse     & 73.3$\pm$ 0.9& 69.7$\pm$ 1.0& $\times$\\
+% Meta      & 67.1$\pm$ 0.6& 76.5$\pm$ 0.5& $\surd$ \\
+% Pima      & 75.1$\pm$ 0.6& 73.9$\pm$ 0.5&         \\
+% \belowspace
+% Vehicle   & 44.9$\pm$ 0.6& 61.5$\pm$ 0.4& $\surd$ \\
+% \hline
+% \end{tabular}
+% \end{sc}
+% \end{small}
+% \caption{Classification accuracies for naive Bayes and flexible 
+% Bayes on various data sets.}
+% \label{tab:sample-table}
+% \end{center}
+% \vskip -3mm
+% \end{table}
+
+In order to evaluate the performance of our proposed model we will train two additional models, the VQ-VAE and VAE-GAN, on the same dataset which will serve as baselines.
+
+
+Architecture: Wavenet-like
+
+%Baseline 1
+%VQ-VAE
+
+%Baseline 2
+%VAE-GAN
+
+Experiment 1
+Include GAN in VQ-VAE
+
+Experiment 2
+do the same with W-GAN
+
+\subsection{Dataset} 
+%Clearly describe the data set and task you will be exploring.  If the data requires any preprocessing, then explain this.  The description should be in enough detail such that your work would be reproducible by another group.  Describe how you will evaluate the task (for example, classification accuracy).  Use citations where appropriate.
+
+To tackle the problem of VC, the Voice Cloning Toolkit (VCTK) dataset~\cite{yamagishi_english_2012} was chosen which includes speech from 109 different speakers of English. For each speaker there is audio data for approximately 400 sentences on average, taken from a number of different sources including a newspaper. The data is non-parallel meaning that the spoken content from each speaker is not necessarily aligned or even the same. Each spoken sentence is given as a separate file in Waveform Audio File Format (WAVE) which allows it to be easily read and used by our model. Since our model is trained end to end there are no additional preprossessing stages.
+
+\section{Interim conclusions}
+\label{sec:concl}
+% What have you learned so far?  Do the experiments indicate that the project is feasible?  Do the experiments indicate that you should consider changes to your original plan?  Can you compare your results so far to what has been reported in the literature?
+
+\section{Plan}
+\label{sec:plan}
+% Based on what you have done so far, present a plan for the rest of the project.  Are there any changes to the objectives?  What are the risks?  Do you need a backup plan?
+
+If the discrete layer doesn't work, we can still use a continuous representation. Distance metric still new.
+
+\bibliography{refs}
+
+\end{document} 
+
