@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functions import QuantizeVector
 
+
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings, embedding_dim):
         """
@@ -18,26 +19,25 @@ class VectorQuantizer(nn.Module):
         Forwards the input through the discrete layer and returns the mapped outputs.
 
         Returns:
-            quantized_sg    quantized input with stopped gradients, such that the 
-                            gradient does not backpropagate into the embeddings
-            quantized       quantized input that should be used for embedding training
+            quantized_st    quantized input for straight-through gradient, such that the gradient only propagates to the inputs.
+            quantized       quantized input that will propagate the gradient to the embedding vectors.
         """
         # Change to TF channel first order
         # (batch, channel, width, height) -> (batch, width, height, channel)
         input = input.permute(0, 2, 3, 1).contiguous()
 
-        # We prevent decoder gradients from reaching embeddings with weight.detach() (sg -- stop-gradient)
-        # The gradients should still backpropagate to the inputs
-        quantized_sg, latents = QuantizeVector.apply(input, self.embedding.weight.detach())
+        # We prevent decoder gradients from reaching embeddings with weight.detach()
+        # The gradients should still backpropagate to the inputs (st -- straight-through)
+        quantized_st, latents = QuantizeVector.apply(input, self.embedding.weight.detach())
         # Change to PyTorch channel last order
         # (batch, width, height, channel) -> (batch, channel, width, height)
-        quantized_sg = quantized_sg.permute(0, 3, 1, 2).contiguous()
+        quantized_st = quantized_st.permute(0, 3, 1, 2).contiguous()
 
-        # Another quantized output, that is specifically for pushing the gradients to the embeddings
+        # Another quantized output, that is specifically for propagating gradients to update embedding vectors.
         quantized = self.embedding(latents)
         quantized = quantized.permute(0, 3, 1, 2).contiguous()
 
-        return quantized_sg, quantized
+        return quantized_st, quantized
 
 
 class FCCNetwork(nn.Module):

@@ -5,6 +5,7 @@ import torch
 from torch import nn
 
 from functions import QuantizeVector
+from model_architectures import VectorQuantizer
 
 def test_forward():
     input = torch.rand((2, 3, 5, 7), dtype=torch.float32, requires_grad=True)
@@ -29,13 +30,16 @@ def test_shape():
 
     assert output.size() == (2, 3, 5, 7)
     assert output.requires_grad
-    assert output.dtype == torch.float32
+    assert output.dtype == torch.float32, \
+        'Output type does not match input type.'
 
     assert latents.size() == (2, 3, 5)
     assert not latents.requires_grad
-    assert latents.dtype == torch.int64
+    assert latents.dtype == torch.int64, \
+        'Latents are note integer.'
 
-def test_input_grad():
+def test_input_straight_through_grad():
+    # Straight-through estimator should return the same output grads from output
     input = torch.rand((2, 3, 5, 7), dtype=torch.float32, requires_grad=True)
     emb = torch.rand((11, 7), dtype=torch.float32, requires_grad=True)
     output, _ = QuantizeVector.apply(input, emb)
@@ -45,11 +49,13 @@ def test_input_grad():
                                     input,
                                     grad_outputs=[grad_output])
 
-    # Straight-through estimator should return the same output grads
-    assert grad_input.size() == (2, 3, 5, 7)
-    assert np.allclose(grad_output.numpy(), grad_input.numpy())
+    assert grad_input.size() == (2, 3, 5, 7), \
+        'Gradient output shape does not match the input.'
+    assert np.allclose(grad_output.numpy(), grad_input.numpy()), \
+        'Gradients are not passed straight-through to the input.'
 
 def test_emb_grad():
+    # Embedding vector gradient is the same as torch.embedding function
     input = torch.rand((2, 3, 5, 7), dtype=torch.float32, requires_grad=True)
     emb = torch.rand((11, 7), dtype=torch.float32, requires_grad=True)
     output, latents = QuantizeVector.apply(input, emb)
@@ -63,6 +69,37 @@ def test_emb_grad():
     grad_emb_torch, = torch.autograd.grad(output_torch, emb,
         grad_outputs=[grad_output])
 
-    # Gradient is the same as torch.embedding function
-    assert grad_emb.size() == (11, 7)
-    assert np.allclose(grad_emb.numpy(), grad_emb_torch.numpy())
+    assert grad_emb.size() == (11, 7), \
+        'Embedding gradient shape does not match the embedding space.'
+    assert np.allclose(grad_emb.numpy(), grad_emb_torch.numpy()), \
+        'Embedding gradients are not equal to the torch.embedding function.'
+
+def test_model_straight_through_grad():
+    input = torch.rand((2, 7, 5, 3), dtype=torch.float32, requires_grad=True)
+    num_embeddings, embedding_dim = 11, 7
+    
+    vq = VectorQuantizer(num_embeddings, embedding_dim)
+    quantized_sg, _ = vq.forward(input)
+
+    grad_output = torch.rand((2, 7, 5, 3))
+    quantized_sg.backward(grad_output)
+
+    assert np.allclose(input.grad.numpy(), grad_output.numpy()), \
+        'Gradients are not passed straight-through to the input.'
+    assert vq.embedding.weight.grad == None, \
+        'Straight-through gradient should not update embeddings.'
+
+def test_model_emb_grad():
+    input = torch.rand((2, 7, 5, 3), dtype=torch.float32, requires_grad=True)
+    num_embeddings, embedding_dim = 11, 7
+
+    vq = VectorQuantizer(num_embeddings, embedding_dim)
+    _, quantized = vq.forward(input)
+
+    grad_output = torch.rand((2, 7, 5, 3))
+    quantized.backward(grad_output)
+
+    assert np.any(vq.embedding.weight.grad.numpy()), \
+        'Gradient was not used to update the embedding vectors.'
+    assert input.grad == None, \
+        'Gradient should not be used to update inputs.'
