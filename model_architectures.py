@@ -5,6 +5,85 @@ import torch.nn.functional as F
 from functions import QuantizeVector
 
 
+class VQVAEGAN(nn.Module):
+    def __init__(self):
+        raise NotImplementedError
+
+class VAEGAN(nn.Module):
+    def __init__(self):
+        raise NotImplementedError
+
+class Discriminator(nn.Module):
+    def __init__(self):
+        raise NotImplementedError
+
+class VQVAE(nn.Module):
+    def __init__(self):
+        #TODO use Encoder/Generator/VectorQuantizer
+        raise NotImplementedError
+
+class VAE(nn.Module):
+    def __init__(self):
+        # TODO: use Encoder/Generator
+        raise NotImplementedError
+
+class Encoder(nn.Module):
+    """
+    Downsampling encoder with strided causal convolutions, similar to WaveNet.
+    """
+    def __init__(self, input_shape, num_layers, kernel_size, stride, num_residual_channels, latent_dim):
+        super(Encoder, self).__init__()
+        self.input_shape = input_shape
+        self.num_layers = num_layers
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.num_residual_channels = num_residual_channels
+        self.latent_dim = latent_dim
+
+        self.layer_dict = nn.ModuleDict()
+        self.build_module()
+    
+    def build_module(self):
+        print('Building Encoder.')
+        x = torch.zeros((self.input_shape))
+
+        # Downsampling convolutions
+        for i in range(self.num_layers):
+            gated_conv = GatedConv1d(in_channels=x.shape[1],
+                                    out_channels=(i+1)*self.num_residual_channels, # TODO: Check if this is not too much
+                                    kernel_size=self.kernel_size, 
+                                    stride=self.stride)
+            self.layer_dict['gated_conv_{}'.format(i)] = gated_conv
+
+            # Trim the trailing pads
+            chomp_conv = Chomp1d(int((self.kernel_size-1)/self.stride)) # TODO: confirm that the dim reduction is correct
+            self.layer_dict['chomp_conv_{}'.format(i)] = chomp_conv
+
+            x = chomp_conv(gated_conv(x))
+        
+        # Final convolution to output latents
+        latent_conv = nn.Conv1d(in_channels=x.shape[1], 
+                        out_channels=self.latent_dim,
+                        kernel_size=1,
+                        stride=1,
+                        padding=0)
+        self.layer_dict['latent_conv'] = latent_conv
+    
+    def forward(self, input):
+        out = input
+        for i in range(self.num_layers):
+            out = self.layer_dict['gated_conv_{}'.format(i)](out)
+            out = self.layer_dict['chomp_conv_{}'.format(i)](out)
+        
+        return self.layer_dict['latent_conv'](out)
+
+
+class Generator(nn.Module): 
+    # Or we can name it Decoder. I've referred to it as the Generator in the report because it's
+    # more convenient, the letter G doesn't clash with D for the discriminator :)
+    def __init__(self):
+        raise NotImplementedError
+
 class VectorQuantizer(nn.Module):
     def __init__(self, num_embeddings, embedding_dim):
         """
@@ -22,6 +101,7 @@ class VectorQuantizer(nn.Module):
             quantized_st    quantized input for straight-through gradient, such that the gradient only propagates to the inputs.
             quantized       quantized input that will propagate the gradient to the embedding vectors.
         """
+        print('Building VQ layer.')
         # Change to TF channel first order
         # (batch, channel, width, height) -> (batch, width, height, channel)
         input = input.permute(0, 2, 3, 1).contiguous()
@@ -39,6 +119,50 @@ class VectorQuantizer(nn.Module):
 
         return quantized_st, quantized
 
+class GatedConv1d(nn.Module):
+    """
+    Gated convolution similar to WaveNet used in the encoder.
+    """
+    def __init__(self, in_channels, out_channels, kernel_size, stride):
+        super(GatedConv1d, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.stride = stride
+
+        self.build_module()
+    
+    def build_module(self):
+        self.conv = nn.Conv1d(in_channels=self.in_channels, 
+                        out_channels=self.out_channels,
+                        kernel_size=self.kernel_size,
+                        stride=self.stride,
+                        padding=self.kernel_size-1)
+
+        self.gate = nn.Conv1d(in_channels=self.in_channels, 
+                        out_channels=self.out_channels,
+                        kernel_size=self.kernel_size,
+                        stride=self.stride,
+                        padding=self.kernel_size-1)
+    
+    def forward(self, input):
+        return torch.tanh(self.conv(input)) * torch.sigmoid(self.gate(input))
+        
+
+class Chomp1d(nn.Module):
+    """
+    Module to cut the padding on one side of the tensor.
+    Required for causal convolutions, such that current timestep does not depend on the future timestep
+
+    Code borrowed from:
+    https://github.com/locuslab/TCN/blob/master/TCN/tcn.py
+    """
+    def __init__(self, chomp_size):
+        super(Chomp1d, self).__init__()
+        self.chomp_size = chomp_size
+
+    def forward(self, x):
+        return x[:, :, :-self.chomp_size].contiguous()
 
 class FCCNetwork(nn.Module):
     def __init__(self, input_shape, num_output_classes, num_filters, num_layers, use_bias=False):
