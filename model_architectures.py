@@ -47,6 +47,21 @@ class Encoder(nn.Module):
         print('Building Encoder.')
         x = torch.zeros((self.input_shape))
 
+        # TODO: This was done in the following implementation before the downsampling layers, do we need this?
+        # https://github.com/JeremyCCHsu/vqvae-speech/blob/master/models/vqvae.py
+        # k_init = self.arch['initial_filter_width']
+        # x = tf.layers.conv1d(
+        #     inputs=x,
+        #     filters=self.arch['residual_channels'],
+        #     kernel_size=k_init,
+        #     kernel_regularizer=tf.keras.regularizers.l2(WEIGHT_DECAY),
+        #     name='initial_filtering',
+        #     kernel_initializer=tf.initializers.variance_scaling(
+        #         scale=1.43,
+        #         distribution='uniform'),
+        #     )
+        # x = tf.nn.leaky_relu(x, 2e-2)
+
         # Downsampling convolutions
         for i in range(self.num_layers):
             gated_conv = GatedConv1d(in_channels=x.shape[1],
