@@ -1,0 +1,19 @@
+{
+    "encoder": {
+        "kernel_sizes": [7, 7, 7, 7, 7],
+        "strides": [3, 3, 3, 3, 3],
+        "num_residual_channels": [16, 32, 64, 128, 256]
+    },
+    "vq": {
+        "latent_dim": 128,
+        "num_latent": 512
+    },
+    "generator": {
+        "kernel_sizes": [7, 7, 7, 7, 7],
+        "strides": [3, 3, 3, 3, 3],
+        // TODO: choose the out_paddings once we know the length of our samples from VCTK
+        "out_paddings": [0, 1, 1, 1, 0], // output = (input -1)*s - 2*padding + kernel + output_padding 
+        "num_residual_channels": [128, 64, 32, 16, 1],
+        "speaker_dim": 60
+    }
+}

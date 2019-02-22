@@ -64,6 +64,16 @@ class AttributeAccessibleDict(object):
     def __init__(self, adict):
         self.__dict__.update(adict)
 
+    @staticmethod
+    def from_nested_dict(data):
+        """ Construct nested AttributeAccessibleDict from nested dictionaries. """
+        if not isinstance(data, dict):
+            return data
+        else:
+            return AttributeAccessibleDict(
+                {key: AttributeAccessibleDict.from_nested_dict(data[key])
+                    for key in data})
+
 
 def extract_args_from_json(json_file_path, existing_args_dict=None):
 
@@ -71,10 +81,11 @@ def extract_args_from_json(json_file_path, existing_args_dict=None):
     with open(summary_filename) as f:
         arguments_dict = json.load(fp=f)
 
-    for key, value in vars(existing_args_dict).items():
-        if key not in arguments_dict:
-            arguments_dict[key] = value
+    if existing_args_dict is not None:
+        for key, value in vars(existing_args_dict).items():
+            if key not in arguments_dict:
+                arguments_dict[key] = value
 
-    arguments_dict = AttributeAccessibleDict(arguments_dict)
+    arguments_dict = AttributeAccessibleDict.from_nested_dict(arguments_dict)
 
     return arguments_dict
