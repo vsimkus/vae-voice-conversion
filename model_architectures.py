@@ -52,7 +52,7 @@ class VQVAE(nn.Module):
                                 speaker_dim=self.generator_arch.speaker_dim,
                                 kernel_sizes=self.generator_arch.kernel_sizes,
                                 strides=self.generator_arch.strides,
-                                paddings=self.generator_arch.paddings,
+                                out_paddings=self.generator_arch.out_paddings,
                                 num_residual_channels=self.generator_arch.num_residual_channels)
 
         y = torch.zeros((self.input_shape[0]), dtype=torch.long)
@@ -137,12 +137,12 @@ class Generator(nn.Module):
     """
     Generator or Decoder in the VAE using transposed 1-dimensional convolutions conditioned on the speaker id.
     """
-    def __init__(self, input_shape, num_speakers, speaker_dim, kernel_sizes, strides, paddings, num_residual_channels):
+    def __init__(self, input_shape, num_speakers, speaker_dim, kernel_sizes, strides, out_paddings, num_residual_channels):
         super(Generator, self).__init__()
         self.input_shape = input_shape
         self.kernel_sizes = kernel_sizes
         self.strides = strides
-        self.paddings = paddings
+        self.out_paddings = out_paddings
         self.num_residual_channels = num_residual_channels
         self.num_speakers = num_speakers
         self.speaker_dim = speaker_dim
@@ -169,7 +169,7 @@ class Generator(nn.Module):
                                     cond_dim=self.speaker_dim,
                                     kernel_size=self.kernel_sizes[i], 
                                     stride=self.strides[i],
-                                    padding=self.paddings[i],
+                                    out_padding=self.paddings[i],
                                     dilation=1)
             self.layer_dict['cond_gated_trans_conv_{}'.format(i)] = conv
             x = conv(x,h)
@@ -261,14 +261,14 @@ class CondGatedTransposeConv1d(nn.Module):
     """
     Conditional gated 1-dimensional convolution transpose.
     """
-    def __init__(self, in_channels, out_channels, cond_dim, kernel_size, stride, padding=0, dilation=1):
+    def __init__(self, in_channels, out_channels, cond_dim, kernel_size, stride, out_padding=0, dilation=1):
         super(CondGatedTransposeConv1d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.cond_dim = cond_dim
         self.kernel_size = kernel_size
         self.stride = stride
-        self.padding = padding
+        self.out_padding = out_padding
         self.dilation = dilation
 
         self.build_module()
