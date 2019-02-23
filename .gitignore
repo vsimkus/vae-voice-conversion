@@ -8,7 +8,7 @@ __pycache__/
 # C extensions
 *.so
 
-# Large local files
+# Large local files / untracked work
 sandbox/
 
 # Distribution / packaging
