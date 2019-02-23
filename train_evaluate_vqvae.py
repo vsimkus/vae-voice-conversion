@@ -3,14 +3,15 @@ import numpy as np
 from arg_extractor import get_args
 from experiment_builder import VQVAEExperimentBuilder
 from model_architectures import VQVAE
+from data_providers import VCTKDataProvider
 
 args = get_args()  # get arguments from command line
 rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
-train_data = data_providers.VCTKDataProvider('train', batch_size=args.batch_size, rng=rng)
-val_data = data_providers.VCTKDataProvider('valid', batch_size=args.batch_size, rng=rng)
-test_data = data_providers.VCTKDataProvider('test', batch_size=args.batch_size,rng=rng)
+train_data = VCTKDataProvider('train', batch_size=args.batch_size, rng=rng)
+val_data = VCTKDataProvider('valid', batch_size=args.batch_size, rng=rng)
+test_data = VCTKDataProvider('test', batch_size=args.batch_size,rng=rng)
 
 vqvae_model = VQVAE(
     input_shape=(args.batch_size, 1, 1000), #TODO: set width, I think this can be arbitrary though, since no filter is fixed to the size of our samples.
@@ -25,10 +26,10 @@ vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
                                     num_epochs=args.num_epochs,
                                     weight_decay_coefficient=args.weight_decay_coefficient,
                                     learning_rate=args.learning_rate,
-                                    gpu_id=args.gpu_id, 
+                                    gpu_id=args.gpu_id,
                                     use_gpu=args.use_gpu,
                                     continue_from_epoch=args.continue_from_epoch,
-                                    train_data=train_data, 
+                                    train_data=train_data,
                                     val_data=val_data,
                                     test_data=test_data)
 

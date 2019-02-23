@@ -1,4 +1,5 @@
 # Preprocesses VCTK dataset from tar file
+# Uses local zip file instead of repository file
 
 from __future__ import print_function
 import torch.utils.data as data
@@ -91,9 +92,7 @@ class VCTK(data.Dataset):
     """
     raw_folder = 'vctk/raw'
     processed_folder = 'vctk/processed'
-
-    # path to zip file
-    zip_path = 'VCTK-Corpus.zip'
+    zip_path = 'VCTK-Corpus.zip' # path to local zip file
     dset_path = 'VCTK-Corpus'
 
     def __init__(self, root, downsample=True, transform=None, target_transform=None, download=False, dev_mode=True):

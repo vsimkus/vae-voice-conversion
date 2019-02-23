@@ -1,4 +1,4 @@
-#dropbox stuff
+    #dropbox stuff
 *.dropbox*
 
 # Byte-compiled / optimized / DLL files
@@ -7,6 +7,9 @@ __pycache__/
 
 # C extensions
 *.so
+
+# Large local files
+sandbox/
 
 # Distribution / packaging
 .Python
