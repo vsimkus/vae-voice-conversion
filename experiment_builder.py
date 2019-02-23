@@ -11,78 +11,6 @@ from collections import defaultdict
 from storage_utils import save_statistics
 
 
-class VQVAEExperimentBuilder(ExperimentBuilder):
-    def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
-                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, use_gpu, gpu_id, continue_from_epoch=-1):
-        super(VQVAEExperimentBuilder, self).__init__(network_model, experiment_name, num_epochs, 
-                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1)
-        self.commit_coefficient = commit_coefficient
-    
-    def run_train_iter(self, x, y):
-        self.train()  # sets model to training mode (in case batch normalization or other methods have different procedures for training and evaluation)
-
-        if type(x) is np.ndarray:
-            x = torch.Tensor(x).float().to(device=self.device) # send data to device as torch tensors
-            y = torch.Tensor(y).long().to(device=self.device)
-
-        x = x.to(device=self.device)
-        y = y.to(device=self.device)
-
-        x_out, z_emb, z_encoder = self.model.forward(x, y)
-
-        # Reconstruction loss
-        loss_recons = F.mse_loss(x_out, x)
-
-        # Vector quantization objective
-        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
-
-        # Commitment objective
-        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
-
-        total_loss = loss_recons + loss_vq + self.becommit_coefficient * loss_commit
-
-        self.optimizer.zero_grad()  # set all weight grads from previous training iters to 0
-        loss.backward()  # backpropagate to compute gradients for current iter loss
-
-        self.optimizer.step()  # update network parameters
-
-        metrics = {}
-        metrics['loss'] = total_loss.data.detach().cpu().numpy()
-        metrics['loss_recons'] = loss_recons.data.detach().cpu().numpy()
-        metrics['loss_vq'] = loss_vq.data.detach().cpu().numpy()
-        metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
-        return metrics
-
-    def run_evaluation_iter(self, x, y):
-        self.eval()  # sets the system to validation mode
-
-        if type(x) is np.ndarray:
-            x = torch.Tensor(x).float().to(device=self.device) # convert data to pytorch tensors and send to the computation device
-            y = torch.Tensor(y).long().to(device=self.device)
-
-        x = x.to(self.device)
-        y = y.to(self.device)
-
-        x_out, z_emb, z_encoder = self.model.forward(x, y)  # forward the data in the model
-
-        # Reconstruction loss
-        loss_recons = F.mse_loss(x_out, x)
-
-        # Vector quantization objective
-        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
-
-        # Commitment objective
-        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
-
-        total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
-
-        metrics = {}
-        metrics['loss'] = total_loss.data.detach().cpu().numpy()
-        metrics['loss_recons'] = loss_recons.data.detach().cpu().numpy()
-        metrics['loss_vq'] = loss_vq.data.detach().cpu().numpy()
-        metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
-        return metrics
-
 
 class ExperimentBuilder(nn.Module):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
@@ -130,7 +58,7 @@ class ExperimentBuilder(nn.Module):
         self.train_data = train_data
         self.val_data = val_data
         self.test_data = test_data
-        self.optimizer = optim.Adam(self.parameters(), 
+        self.optimizer = optim.Adam(self.parameters(),
                                     amsgrad=False,
                                     lr=learning_rate,
                                     weight_decay=weight_decay_coefficient)
@@ -139,7 +67,7 @@ class ExperimentBuilder(nn.Module):
         self.experiment_logs = os.path.abspath(os.path.join(self.experiment_folder, "result_outputs"))
         self.experiment_saved_models = os.path.abspath(os.path.join(self.experiment_folder, "saved_models"))
         print(self.experiment_folder, self.experiment_logs)
-        
+
         # Set best models to be at 0 since we are just starting
         self.best_val_model_idx = 0
         self.best_val_model_loss = 0.
@@ -168,7 +96,7 @@ class ExperimentBuilder(nn.Module):
                 print("Model objects cannot be found, initializing a new model and starting from scratch")
                 self.starting_epoch = 0
                 self.state = dict()
-                
+
         # Load model from continue_from_epoch
         elif continue_from_epoch != -1:
             self.best_val_model_idx, self.best_val_model_loss, self.state = self.load_model(
@@ -246,7 +174,7 @@ class ExperimentBuilder(nn.Module):
             with tqdm.tqdm(total=len(self.train_data)) as pbar_train:  # create a progress bar for training
                 for idx, (x, y) in enumerate(self.train_data):  # get data batches
                     metrics = self.run_train_iter(x=x, y=y)  # take a training iter step
-                    
+
                     # Append metrics from the current iteration
                     for key, value in metrics.items():
                         current_epoch_metrics['train_{}'.format(key)].append(value)
@@ -324,3 +252,77 @@ class ExperimentBuilder(nn.Module):
                         stats_dict=test_losses, current_epoch=0, continue_from_mode=False)
 
         return experiment_metrics, test_losses
+
+
+class VQVAEExperimentBuilder(ExperimentBuilder):
+    def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
+                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, use_gpu, gpu_id, continue_from_epoch=-1):
+        super(VQVAEExperimentBuilder, self).__init__(network_model, experiment_name, num_epochs,
+                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1)
+        self.commit_coefficient = commit_coefficient
+
+    def run_train_iter(self, x, y):
+        self.train()  # sets model to training mode (in case batch normalization or other methods have different procedures for training and evaluation)
+
+        if type(x) is np.ndarray:
+            x = torch.Tensor(x).float().to(device=self.device) # send data to device as torch tensors
+            y = torch.Tensor(y).long().to(device=self.device)
+
+        x = x.to(device=self.device)
+        y = y.to(device=self.device)
+
+        x_out, z_emb, z_encoder = self.model.forward(x, y)
+
+        # Reconstruction loss
+        loss_recons = F.mse_loss(x_out, x)
+
+        # Vector quantization objective
+        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
+
+        # Commitment objective
+        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
+
+        total_loss = loss_recons + loss_vq + self.becommit_coefficient * loss_commit
+
+        self.optimizer.zero_grad()  # set all weight grads from previous training iters to 0
+        loss.backward()  # backpropagate to compute gradients for current iter loss
+
+        self.optimizer.step()  # update network parameters
+
+        metrics = {}
+        metrics['loss'] = total_loss.data.detach().cpu().numpy()
+        metrics['loss_recons'] = loss_recons.data.detach().cpu().numpy()
+        metrics['loss_vq'] = loss_vq.data.detach().cpu().numpy()
+        metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
+        return metrics
+
+    def run_evaluation_iter(self, x, y):
+        self.eval()  # sets the system to validation mode
+
+        if type(x) is np.ndarray:
+            x = torch.Tensor(x).float().to(device=self.device) # convert data to pytorch tensors and send to the computation device
+            y = torch.Tensor(y).long().to(device=self.device)
+
+        x = x.to(self.device)
+        y = y.to(self.device)
+
+        x_out, z_emb, z_encoder = self.model.forward(x, y)  # forward the data in the model
+
+        # Reconstruction loss
+        loss_recons = F.mse_loss(x_out, x)
+
+        # Vector quantization objective
+        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
+
+        # Commitment objective
+        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
+
+        total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
+
+        metrics = {}
+        metrics['loss'] = total_loss.data.detach().cpu().numpy()
+        metrics['loss_recons'] = loss_recons.data.detach().cpu().numpy()
+        metrics['loss_vq'] = loss_vq.data.detach().cpu().numpy()
+        metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
+        return metrics
+
