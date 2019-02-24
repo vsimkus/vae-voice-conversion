@@ -8,6 +8,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Datasets
+data/
+
 # Large local files / untracked work
 sandbox/
 
