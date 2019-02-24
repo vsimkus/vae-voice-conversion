@@ -70,6 +70,7 @@ def load_txts(dir):
     return utterences
 
 
+
 class VCTK(data.Dataset):
     """`VCTK <http://homepages.inf.ed.ac.uk/jyamagis/page3/page58/page58.html>`_ Dataset.
     `alternate url <http://datashare.is.ed.ac.uk/handle/10283/2651>`
@@ -185,7 +186,6 @@ class VCTK(data.Dataset):
         filename = zip_path.rpartition('/')[2]
         file_path = os.path.join(self.root, self.raw_folder, filename)
         if not os.path.isfile(file_path):
-            # We don' require loading from the zip_path, but from a local zip file)
             shutil.copy2(zip_path, file_path)
 
         if not os.path.exists(dset_abs_path):
@@ -204,10 +204,9 @@ class VCTK(data.Dataset):
             os.path.join(processed_abs_dir, "VCTK_COPYING")
         )
         audios = make_manifest(dset_abs_path)
-        utterences = load_txts(dset_abs_path)
         self.max_len = 0
-        print("Found {} audio files and {} utterences".format(
-            len(audios), len(utterences)))
+        print("Found {} audio files".format(
+            len(audios)))
         for n in range(len(audios) // self.chunk_size + 1):
             tensors = []
             labels = []
@@ -221,7 +220,7 @@ class VCTK(data.Dataset):
                     sig = read_audio(f, downsample=self.downsample)[0]
                     tensors.append(sig)
                     lengths.append(sig.size(1))
-                    labels.append(utterences[f_rel_no_ext])
+                    labels.append(f_rel_no_ext.split('_')[0])
                     self.max_len = sig.size(1) if sig.size(
                         1) > self.max_len else self.max_len
             # sort sigs/labels: longest -> shortest
