@@ -81,7 +81,7 @@ class ExperimentBuilder(nn.Module):
         if not os.path.exists(self.experiment_saved_models):
             os.mkdir(self.experiment_saved_models)  # create the experiment saved models directory
 
-        self.criterion = nn.CrossEntropyLoss().to(self.device)  # send the loss computation to the GPU
+        # self.criterion = nn.CrossEntropyLoss().to(self.device)  # send the loss computation to the GPU
 
         self.num_epochs = num_epochs
         # Load the latest model
@@ -282,7 +282,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         # Commitment objective
         loss_commit = F.mse_loss(z_emb, z_encoder.detach())
 
-        total_loss = loss_recons + loss_vq + self.becommit_coefficient * loss_commit
+        total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
 
         self.optimizer.zero_grad()  # set all weight grads from previous training iters to 0
         loss.backward()  # backpropagate to compute gradients for current iter loss

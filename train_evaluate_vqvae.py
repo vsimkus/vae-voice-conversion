@@ -3,22 +3,24 @@ import numpy as np
 from arg_extractor import get_args
 from experiment_builder import VQVAEExperimentBuilder
 from model_architectures import VQVAE
-from data_providers import VCTKDataProvider
+from vctk import VCTK
 
 args = get_args()  # get arguments from command line
 rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
-train_data = VCTKDataProvider('train', batch_size=args.batch_size, rng=rng)
-val_data = VCTKDataProvider('valid', batch_size=args.batch_size, rng=rng)
-test_data = VCTKDataProvider('test', batch_size=args.batch_size,rng=rng)
+dataset = VCTK(root='data', download=False)
+train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[0.9*len(dataset), 0.1*len(dataset)])
+train_data = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+val_data = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+test_data = val_data
 
 vqvae_model = VQVAE(
-    input_shape=(args.batch_size, 1, 1000), #TODO: set width, I think this can be arbitrary though, since no filter is fixed to the size of our samples.
+    input_shape=(args.batch_size, 1, VCTK.max_len),
     encoder_arch=args.encoder,
     vq_arch=args.vq,
     generator_arch=args.generator,
-    num_speakers=109) #TODO: set from dataset
+    num_speakers=109)
 
 # TODO: update this once Experiment builder is done.
 vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
