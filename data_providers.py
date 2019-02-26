@@ -9,6 +9,8 @@ import pickle
 import gzip
 import numpy as np
 import os
+from pytorch import torch.utils.data.DataLoader as DataLoader
+
 DEFAULT_SEED = 20112018
 
 class DataProvider(object):
@@ -404,3 +406,60 @@ class AugmentedMNISTDataProvider(MNISTDataProvider):
             AugmentedMNISTDataProvider, self).next()
         transformed_inputs_batch = self.transformer(inputs_batch, self.rng)
         return transformed_inputs_batch, targets_batch
+      
+class VCTKDataProvider(DataProvider):
+    """Data provider for MNIST dataset which randomly transforms images."""
+
+    def __init__(self, dataset, batch_size=100, max_num_batches=-1,
+                 shuffle_order=True, rng=None, transformer=None):
+        """Create a new augmented MNIST data provider object.
+
+        Args:
+            which_set: One of 'train', 'valid' or 'test'. Determines which
+                portion of the MNIST data this object should provide.
+            batch_size (int): Number of data points to include in each batch.
+            max_num_batches (int): Maximum number of batches to iterate over
+                in an epoch. If `max_num_batches * batch_size > num_data` then
+                only as many batches as the data can be split into will be
+                used. If set to -1 all of the data will be used.
+            shuffle_order (bool): Whether to randomly permute the order of
+                the data before each epoch.
+            rng (RandomState): A seeded random number generator.
+            transformer: Function which takes an `inputs` array of shape
+                (batch_size, input_dim) corresponding to a batch of input
+                images and a `rng` random number generator object (i.e. a
+                call signature `transformer(inputs, rng)`) and applies a
+                potentiall random set of transformations to some / all of the
+                input images as each new batch is returned when iterating over
+                the data provider.
+        """
+        super(VCTKDataProvider, self).__init__(
+            'train', batch_size, max_num_batches, shuffle_order, rng)
+
+        self.dataset = dataset
+        self.dataLoader = DataLoader(self.dataset, batch_size, shuffle=shuffle_order)
+        self.transformer = transformer
+
+    def next(self):
+        """Returns next data batch or raises `StopIteration` if at end."""
+        if self._curr_batch + 1 > self.num_batches:
+            # no more batches in current iteration through data set so start
+            # new epoch ready for another pass and indicate iteration is at end
+            raise StopIteration()
+
+        batch_id, next_element = self.dataLoader.__next__()
+        return next_element[0], next_element[1]
+
+    def new_epoch(self):
+        """Starts a new epoch (pass through data), possibly shuffling first."""
+        self._curr_batch = 0
+        self.dataLoader = DataLoader(self.dataset, batch_size, shuffle=self.shuffle_order)
+
+    def reset(self):
+        """Resets the provider to the initial state."""
+        raise NotImplementedError
+
+
+    def shuffle(self):
+        """Randomly shuffles order of data."""
+        raise NotImplementedError
