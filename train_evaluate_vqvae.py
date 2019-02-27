@@ -12,10 +12,9 @@ torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
 # Load dataset
 dataset = VCTK(root='data', download=False, transform=transforms.Compose([
-    transforms.Scale(),
     transforms.PadTrim(max_len=args.input_max_len),
     # TODO decide on number of channels here
-    transforms.MuLawEncoding(quantization_channels=256)
+    # transforms.MuLawEncoding(quantization_channels=256)
 ]))
 
 # Split train and test/validation sets
@@ -34,7 +33,6 @@ vqvae_model = VQVAE(
     generator_arch=args.generator,
     num_speakers=109)
 
-# TODO: update this once Experiment builder is done.
 vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
                                     experiment_name=args.experiment_name,
                                     num_epochs=args.num_epochs,

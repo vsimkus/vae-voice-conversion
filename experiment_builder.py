@@ -233,7 +233,7 @@ class ExperimentBuilder(nn.Module):
                         # load best validation model
                         model_save_name="train_model")
         current_epoch_metrics = defaultdict(list)  # initialize a statistics dict
-        with tqdm.tqdm(total=self.test_data.num_batches) as pbar_test:  # create a progress bar for test
+        with tqdm.tqdm(total=len(self.test_data)) as pbar_test:  # create a progress bar for test
             for x, y in self.test_data:  # sample batch
                 metrics = self.run_evaluation_iter(x=x, y=y)  # compute loss and accuracy by running an evaluation step
 
@@ -285,7 +285,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
 
         self.optimizer.zero_grad()  # set all weight grads from previous training iters to 0
-        loss.backward()  # backpropagate to compute gradients for current iter loss
+        total_loss.backward()  # backpropagate to compute gradients for current iter loss
 
         self.optimizer.step()  # update network parameters
 

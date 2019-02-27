@@ -52,6 +52,8 @@ class VQVAE(nn.Module):
                                 speaker_dim=self.generator_arch.speaker_dim,
                                 kernel_sizes=self.generator_arch.kernel_sizes,
                                 strides=self.generator_arch.strides,
+                                dilations=self.generator_arch.dilations,
+                                paddings=self.generator_arch.paddings,
                                 out_paddings=self.generator_arch.out_paddings,
                                 num_residual_channels=self.generator_arch.num_residual_channels)
 
@@ -68,7 +70,15 @@ class VQVAE(nn.Module):
         x_hat = self.generator(z_st, speaker)
 
         return x_hat, z_emb, z
-
+    
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        # for item in self.layer_dict.children():
+        self.encoder.reset_parameters()
+        self.vq.reset_parameters()
+        self.generator.reset_parameters()
 
 
 class VAE(nn.Module):
@@ -98,6 +108,7 @@ class Encoder(nn.Module):
 
         x = torch.zeros((self.input_shape))
 
+        print(x.shape)
         # Downsampling convolutions
         for i in range(num_layers):
             gated_conv = GatedConv1d(in_channels=x.shape[1],
@@ -114,6 +125,7 @@ class Encoder(nn.Module):
 
             # x = chomp_conv(gated_conv(x))
             x = gated_conv(x)
+            print(x.shape)
         
         # Final convolution to output latents
         latent_conv = nn.Conv1d(in_channels=x.shape[1], 
@@ -122,6 +134,9 @@ class Encoder(nn.Module):
                         stride=1,
                         padding=0)
         self.layer_dict['latent_conv'] = latent_conv
+        
+        x = latent_conv(x)
+        print(x.shape)
     
     def forward(self, input):
         num_layers = len(self.kernel_sizes)
@@ -131,17 +146,26 @@ class Encoder(nn.Module):
             # out = self.layer_dict['chomp_conv_{}'.format(i)](out)
         
         return self.layer_dict['latent_conv'](out)
+    
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        for item in self.layer_dict.children():
+            item.reset_parameters()
 
 
 class Generator(nn.Module): 
     """
     Generator or Decoder in the VAE using transposed 1-dimensional convolutions conditioned on the speaker id.
     """
-    def __init__(self, input_shape, num_speakers, speaker_dim, kernel_sizes, strides, out_paddings, num_residual_channels):
+    def __init__(self, input_shape, num_speakers, speaker_dim, kernel_sizes, strides, dilations, paddings, out_paddings, num_residual_channels):
         super(Generator, self).__init__()
         self.input_shape = input_shape
         self.kernel_sizes = kernel_sizes
         self.strides = strides
+        self.dilations = dilations
+        self.paddings = paddings
         self.out_paddings = out_paddings
         self.num_residual_channels = num_residual_channels
         self.num_speakers = num_speakers
@@ -159,9 +183,10 @@ class Generator(nn.Module):
         print('Building Decoder/Generator with {} upsampling layers.'.format(num_layers))
         
         x = torch.zeros((self.input_shape))
-        y = torch.zeros((self.input_shape[0]), dtype=torch.long) # (batch) vector of speaker ids
+        y = torch.zeros((self.input_shape[0]), dtype=torch.long) # (batch,) vector of speaker ids
         h = self.speaker_dict(y) # (batch, speaker_dim)
         
+        print(x.shape)
         # Upsampling convolutions
         for i in range(num_layers):
             conv = CondGatedTransposeConv1d(in_channels=x.shape[1],
@@ -169,10 +194,12 @@ class Generator(nn.Module):
                                     cond_dim=self.speaker_dim,
                                     kernel_size=self.kernel_sizes[i], 
                                     stride=self.strides[i],
-                                    out_padding=self.paddings[i],
-                                    dilation=1)
+                                    dilation=self.dilations[i],
+                                    padding=self.paddings[i],
+                                    out_padding=self.out_paddings[i])
             self.layer_dict['cond_gated_trans_conv_{}'.format(i)] = conv
             x = conv(x,h)
+            print(x.shape)
     
     def forward(self, input, speaker):
         num_layers = len(self.kernel_sizes)
@@ -183,6 +210,15 @@ class Generator(nn.Module):
             out = self.layer_dict['cond_gated_trans_conv_{}'.format(i)](out, speaker_code)
         
         return out
+    
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        for item in self.layer_dict.children():
+            item.reset_parameters()
+        
+        self.speaker_dict.reset_parameters()
 
 
 class VectorQuantizer(nn.Module):
@@ -192,8 +228,16 @@ class VectorQuantizer(nn.Module):
         """
         super(VectorQuantizer, self).__init__()
         print('Building VQ layer.')
+        self.num_embeddings = num_embeddings
+
         self.embedding = nn.Embedding(num_embeddings, embedding_dim)
-        self.embedding.weight.data.uniform_(-1./num_embeddings, 1./num_embeddings)
+        self.init_embedding()
+
+    def init_embedding(self):
+        """
+        Initializes the embeddings uniformly.
+        """
+        self.embedding.weight.data.uniform_(-1./self.num_embeddings, 1./self.num_embeddings)
 
     def forward(self, input):
         """
@@ -219,6 +263,13 @@ class VectorQuantizer(nn.Module):
         quantized = quantized.permute(0, 2, 1).contiguous()
 
         return quantized_st, quantized
+    
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        self.embedding.reset_parameters()
+        self.init_embedding()
 
 class GatedConv1d(nn.Module):
     """
@@ -256,18 +307,26 @@ class GatedConv1d(nn.Module):
     
     def forward(self, input):
         return torch.tanh(self.conv(input)) * torch.sigmoid(self.gate(input))
+    
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        self.conv.reset_parameters()
+        self.gate.reset_parameters()
 
 class CondGatedTransposeConv1d(nn.Module):
     """
     Conditional gated 1-dimensional convolution transpose.
     """
-    def __init__(self, in_channels, out_channels, cond_dim, kernel_size, stride, out_padding=0, dilation=1):
+    def __init__(self, in_channels, out_channels, cond_dim, kernel_size, stride, dilation=1, padding=0, out_padding=0):
         super(CondGatedTransposeConv1d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.cond_dim = cond_dim
         self.kernel_size = kernel_size
         self.stride = stride
+        self.padding=padding
         self.out_padding = out_padding
         self.dilation = dilation
 
@@ -277,24 +336,21 @@ class CondGatedTransposeConv1d(nn.Module):
         self.cond = nn.Linear(in_features=self.cond_dim,
                             out_features=self.out_channels)
 
-        # TODO: padding = (int((self.kernel_size - 1) * (self.dilation)), 0)
-        # Only left-pads. no need for chomping afterwards.
-        # from: https://github.com/NVIDIA/nv-wavenet/blob/master/pytorch/wavenet.py
-        # padding = int((self.kernel_size-1) * self.dilation)
-        # padding=0
         self.conv = nn.ConvTranspose1d(in_channels=self.in_channels, 
                         out_channels=self.out_channels,
                         kernel_size=self.kernel_size,
                         stride=self.stride,
                         dilation=self.dilation,
-                        output_padding=self.padding)
+                        padding=self.padding,
+                        output_padding=self.out_padding)
         
         self.gate = nn.ConvTranspose1d(in_channels=self.in_channels, 
                         out_channels=self.out_channels,
                         kernel_size=self.kernel_size,
                         stride=self.stride,
                         dilation=self.dilation,
-                        output_padding=self.padding)
+                        padding=self.padding,
+                        output_padding=self.out_padding)
         
     def forward(self, input, speaker):
         cond_out = self.cond(speaker).unsqueeze(-1)
@@ -306,6 +362,14 @@ class CondGatedTransposeConv1d(nn.Module):
         gate_out = torch.add(gate_out, cond_out)
 
         return torch.tanh(conv_out) * torch.sigmoid(gate_out)
+
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        self.cond.reset_parameters()
+        self.conv.reset_parameters()
+        self.gate.reset_parameters()
         
 
 
