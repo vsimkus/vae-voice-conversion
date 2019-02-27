@@ -27,14 +27,14 @@ export PYTHON_PATH=$PATH
 mkdir -p /disk/scratch/${TEAM_ID}
 
 export TMPDIR=/disk/scratch/${TEAM_ID}/
-export TMP=/disk/scratch/${TEAM_ID}/
+export TMP=/disk/scratch/${TEAM_ID}
 
 mkdir -p ${TMP}/data/
 
-rsync -ua --progress /home/${STUDENT_ID}/data/ /disk/scratch/${TEAM_ID}/data/
-unzip -u /disk/scratch/${TEAM_ID}/data/processed_data.zip -d /disk/scratch/${TEAM_ID}/data
+rsync -ua --progress /home/${STUDENT_ID}/data/ ${TMP}/data/
+unzip -u ${TMP}/data/processed_data.zip -d ${TMP}/data
 
-export DATASET_DIR=${TMP}/data/
+export DATASET_DIR=${TMP}/data/processed_data/
 # Activate the relevant virtual environment:
 
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp

@@ -1,3 +1,5 @@
+import os
+
 import torch
 import numpy as np
 import torchaudio_transforms as transforms
@@ -10,8 +12,12 @@ args = get_args()  # get arguments from command line
 rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
+data_dir = os.environ['DATASET_DIR']
+
+print(data_dir)
+
 # Load dataset
-dataset = VCTKDataset(root='data', transform=transforms.Compose([
+dataset = VCTKDataset(root=data_dir, transform=transforms.Compose([
     transforms.PadTrim(max_len=args.input_max_len),
     # TODO decide on number of channels here
     # transforms.MuLawEncoding(quantization_channels=256)
