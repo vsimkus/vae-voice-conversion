@@ -28,13 +28,14 @@ def get_args():
                         help='Experiment name - to be used for building the experiment folder')
     parser.add_argument('--use_gpu', nargs="?", type=str2bool, default=False,
                         help='A flag indicating whether we will use GPU acceleration or not')
-    parser.add_argument('--gpu_id', type=str, default="None", help="A string indicating the gpu to use")
+    parser.add_argument('--gpu_id', type=str, default="None", help="A comma-separated string indicating the gpus to use")
     parser.add_argument('--weight_decay_coefficient', nargs="?", type=float, default=1e-05,
                         help='Weight decay to use for Adam')
     parser.add_argument('--learning_rate', nargs="?", type=float, default=1e-03,
                         help='Learning rate to use for Adam')
     parser.add_argument('--filepath_to_arguments_json_file', nargs="?", type=str, default=None,
-                        help='')
+                        help='All configs and model-specific parameters can be set in a json file. If a setting is provided in the json file it will be prefered.')
+    parser.add_argument('--dataset_root_path', type=str, default="data")    
 
     args = parser.parse_args()
     gpu_id = str(args.gpu_id)
