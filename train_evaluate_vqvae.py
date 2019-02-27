@@ -1,9 +1,6 @@
-yimport os
-
 import torch
 import numpy as np
 import torchaudio_transforms as transforms
-import os
 from arg_extractor import get_args
 from experiment_builder import VQVAEExperimentBuilder
 from model_architectures import VQVAE
@@ -13,10 +10,10 @@ args = get_args()  # get arguments from command line
 rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
-data_dir = os.environ['DATASET_DIR']
-
 # Load dataset
-dataset = VCTKDataset(root=data_dir, transform=transforms.Compose([
+dataset_path = args.dataset_root_path
+print(dataset_path)
+dataset = VCTKDataset(root=dataset_path, transform=transforms.Compose([
     transforms.PadTrim(max_len=args.input_max_len),
     # TODO decide on number of channels here
     # transforms.MuLawEncoding(quantization_channels=256)

@@ -25,14 +25,10 @@ export PATH=${CUDA_HOME}/bin:${PATH}
 export PYTHON_PATH=$PATH
 
 mkdir -p /disk/scratch/${TEAM_ID}
-
 export TMPDIR=/disk/scratch/${TEAM_ID}/
-
 export TMP=/disk/scratch/${TEAM_ID}
 
-export DATASET_DIR=${TMP}/data/
-
-mkdir -p ${DATASET_DIR}
+mkdir -p ${TMP}/data/
 
 rsync -ua --progress /home/${STUDENT_ID}/data/ ${TMP}/data/
 unzip -u ${TMP}/data/processed_data.zip -d ${TMP}/data
@@ -42,4 +38,9 @@ export DATASET_DIR=${TMP}/data/processed_data/
 
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
-python train_evaluate_vqvae.py --filepath_to_arguments_json_file='experiment_configs/vqvae_architecture.json'
+python train_evaluate_vqvae.py \
+                --use_gpu=True \
+                --gpu_id='0' \
+                --experiment_name='vqvae_init_exp' \
+                --filepath_to_arguments_json_file='experiment_configs/vqvae_architecture.json' \
+                --dataset_root_path=${DATASET_DIR} 
