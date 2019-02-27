@@ -1,22 +1,28 @@
 {
-    "commit_coefficient": 0.25, // could be in the range 0.1-2.0
-    "learning_rate": 0.001,
+    "seed": 154367,
+    "input_max_len": 100000,
+    "comment_input_max_len": "Set to mean + 2 * std dev of audio lengths",
+    "commit_coefficient": 0.25,
+    "comment_commit_coefficient": "could be in the range 0.1-2.0",
+    "learning_rate": 1e-4,
+    "weight_decay_coefficient": 1e-6,
     "encoder": {
-        "kernel_sizes": [7, 7, 7, 7, 7],
-        "strides": [3, 3, 3, 3, 3],
-        "num_residual_channels": [16, 32, 64, 128, 256]
+        "kernel_sizes": [7, 5, 7, 5, 7, 5],
+        "strides": [3, 1, 3, 1, 3, 1],
+        "num_residual_channels": [16, 32, 64, 128, 256, 256]
     },
     "vq": {
-        "latent_dim": 128, // What should the latent dimension be?
+        "latent_dim": 64,
+        "comment_latent_dim": "TODO: choose the latent_dim",
         "num_latent": 512
     },
     "generator": {
-        "kernel_sizes": [7, 7, 7, 7, 7],
-        "strides": [3, 3, 3, 3, 3],
-        // TODO: Check receptive field, maybe use dilations? 
-        // TODO: choose the out_paddings once we know the length of our samples from VCTK
-        "out_paddings": [0, 1, 1, 1, 0], // output = (input -1)*s - 2*padding + kernel + output_padding 
-        "num_residual_channels": [128, 64, 32, 16, 1],
-        "speaker_dim": 60 // What should be the dimensionality for speaker codes?
+        "kernel_sizes": [7, 5, 7, 5, 7, 5, 100],
+        "strides": [3, 1, 3, 1, 3, 1, 1],
+        "comment_strides": "TODO: Check receptive field, maybe use dilations?",
+        "out_paddings": [0, 0, 0, 0, 0, 0, 0], 
+        "comment_out_paddings": "output = (input -1)*stride - 2*padding + kernel + output_padding",
+        "num_residual_channels": [256, 256, 128, 64, 32, 16, 1],
+        "speaker_dim": 64
     }
 }
