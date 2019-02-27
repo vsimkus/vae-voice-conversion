@@ -70,6 +70,23 @@ def load_txts(dir):
     return utterences
 
 
+def load_ids(dir):
+    """Create a dictionary to convert VCTK participant ID to integer ID."""
+    ids = dict()
+    id = 0
+    dir = os.path.join(os.path.expanduser(dir), 'wav48/')
+    for speaker in sorted(os.listdir(dir)):
+        d = os.path.join(dir, speaker)
+        if not os.path.isdir(d):
+            continue
+
+        fname_no_ext = os.path.basename(
+            d).rsplit(".", 1)[0]
+        ids[fname_no_ext] = id
+        id += 1
+
+    return ids
+
 
 class VCTK(data.Dataset):
     """`VCTK <http://homepages.inf.ed.ac.uk/jyamagis/page3/page58/page58.html>`_ Dataset.
@@ -90,7 +107,7 @@ class VCTK(data.Dataset):
     """
     raw_folder = 'vctk/raw'
     processed_folder = 'vctk/processed'
-    zip_path = 'VCTK-Corpus.zip' # path to local zip file
+    zip_path = 'VCTK-Corpus.zip'  # path to local zip file
     dset_path = 'VCTK-Corpus'
 
     def __init__(self, root, downsample=True, transform=None, target_transform=None, download=False, dev_mode=True):
@@ -204,6 +221,7 @@ class VCTK(data.Dataset):
             os.path.join(processed_abs_dir, "VCTK_COPYING")
         )
         audios = make_manifest(dset_abs_path)
+        ids = load_ids(dset_abs_path)
         self.max_len = 0
         print("Found {} audio files".format(
             len(audios)))
@@ -220,7 +238,7 @@ class VCTK(data.Dataset):
                     sig = read_audio(f, downsample=self.downsample)[0]
                     tensors.append(sig)
                     lengths.append(sig.size(1))
-                    labels.append(f_rel_no_ext.split('_')[0])
+                    labels.append(ids[f_rel_no_ext.split('_')[0]])
                     self.max_len = sig.size(1) if sig.size(
                         1) > self.max_len else self.max_len
             # sort sigs/labels: longest -> shortest
