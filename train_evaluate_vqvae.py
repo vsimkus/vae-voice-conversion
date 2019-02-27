@@ -33,7 +33,6 @@ vqvae_model = VQVAE(
     generator_arch=args.generator,
     num_speakers=109)
 
-# TODO: update this once Experiment builder is done.
 vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
                                     experiment_name=args.experiment_name,
                                     num_epochs=args.num_epochs,
