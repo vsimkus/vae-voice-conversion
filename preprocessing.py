@@ -10,7 +10,7 @@ data = vctk.VCTK(zip_path, download=True, downsample=True, dev_mode=True, transf
     transforms.PadTrim(max_len=16000),  # TODO decide on max length
 
     # TODO decide on number of channels here
-    transforms.MuLawEncoding(quantization_channels=256),
+    transforms.MuLawEncoding(quantization_channels=256)
 ]))
 
 
