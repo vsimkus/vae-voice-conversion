@@ -89,21 +89,14 @@ def load_ids(dir):
     return ids
 
 
-class VCTK(data.Dataset):
-    """`VCTK <http://homepages.inf.ed.ac.uk/jyamagis/page3/page58/page58.html>`_ Dataset.
+class VCTKPreprocessor():
+    """`VCTK Preprocessor for <http://homepages.inf.ed.ac.uk/jyamagis/page3/page58/page58.html>`.
     `alternate url <http://datashare.is.ed.ac.uk/handle/10283/2651>`
+    Based on torchaudio vctk.py <https://github.com/pytorch/audio>
 
     Args:
-        root (string): Root directory of dataset where ``processed/training.pt``
-            and  ``processed/test.pt`` exist.
-        download (bool, optional): If true, downloads the dataset from the internet and
-            puts it in root directory. If dataset is already downloaded, it is not
-            downloaded again.
-        transform (callable, optional): A function/transform that  takes in an PIL image
-            and returns a transformed version. E.g, ``transforms.Scale``
-        target_transform (callable, optional): A function/transform that takes in the
-            target and transforms it.
-        dev_mode(bool, optional): if true, clean up is not performed on downloaded
+        root (string): Root directory of dataset where the dataset should be stored in vctk/raw/, vctk/processed/ directories.
+        dev_mode(bool, optional): if true, clean up is not performed on raw
             files.  Useful to keep raw audio and transcriptions.
     """
     raw_folder = 'vctk/raw'
@@ -111,11 +104,9 @@ class VCTK(data.Dataset):
     zip_path = 'VCTK-Corpus.zip'  # path to local zip file
     dset_path = 'VCTK-Corpus'
 
-    def __init__(self, root, downsample=True, transform=None, target_transform=None, download=False, dev_mode=True):
+    def __init__(self, root, downsample=True, dev_mode=True):
         self.root = os.path.expanduser(root)
         self.downsample = downsample
-        self.transform = transform
-        self.target_transform = target_transform
         self.dev_mode = dev_mode
         self.data = []
         self.labels = []
@@ -124,43 +115,11 @@ class VCTK(data.Dataset):
         self.max_len = 0
         self.mean_len = 0.
         self.std_len = 0.
-        self.cached_pt = 0
 
-        if download:
-            self.download()
+        self.process()
 
         if not self._check_exists():
-            raise RuntimeError('Dataset not found.' +
-                               ' You can use download=True to download it')
-        self._read_info()
-        self.data, self.labels = torch.load(os.path.join(
-            self.root, self.processed_folder, "vctk_{:04d}.pt".format(self.cached_pt)))
-
-    def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-
-        Returns:
-            tuple: (image, target) where target is index of the target class.
-        """
-        if self.cached_pt != index // self.chunk_size:
-            self.cached_pt = int(index // self.chunk_size)
-            self.data, self.labels = torch.load(os.path.join(
-                self.root, self.processed_folder, "vctk_{:04d}.pt".format(self.cached_pt)))
-        index = index % self.chunk_size
-        audio, target = self.data[index], self.labels[index]
-
-        if self.transform is not None:
-            audio = self.transform(audio)
-
-        if self.target_transform is not None:
-            target = self.target_transform(target)
-
-        return audio, target
-
-    def __len__(self):
-        return self.num_samples
+            raise RuntimeError('Dataset not found.')
 
     def _check_exists(self):
         return os.path.exists(os.path.join(self.root, self.processed_folder, "vctk_info.txt"))
@@ -174,17 +133,8 @@ class VCTK(data.Dataset):
             f.write("mean_len,{:.4f}\n".format(self.mean_len))
             f.write("std_len,{:.4f}\n".format(self.std_len))
 
-    def _read_info(self):
-        info_path = os.path.join(
-            self.root, self.processed_folder, "vctk_info.txt")
-        with open(info_path, "r") as f:
-            self.num_samples = int(f.readline().split(",")[1])
-            self.max_len = int(f.readline().split(",")[1])
-            self.mean_len = float(f.readline().split(",")[1])
-            self.std_len = float(f.readline().split(",")[1])
-
-    def download(self):
-        """Download the VCTK data if it doesn't exist in processed_folder already."""
+    def process(self):
+        """Process the VCTK data if it doesn't exist in processed_folder already."""
         import zipfile
 
         if self._check_exists():
@@ -195,7 +145,6 @@ class VCTK(data.Dataset):
         dset_abs_path = os.path.join(
             self.root, self.raw_folder, self.dset_path)
 
-        # download files
         try:
             os.makedirs(os.path.join(self.root, self.processed_folder))
             os.makedirs(os.path.join(self.root, self.raw_folder))
@@ -206,7 +155,7 @@ class VCTK(data.Dataset):
                 raise
 
         zip_path = self.zip_path
-        print('unzipping' + zip_path)
+        print('Unzipping', zip_path)
         filename = zip_path.rpartition('/')[2]
         file_path = os.path.join(self.root, self.raw_folder, filename)
         if not os.path.isfile(file_path):
