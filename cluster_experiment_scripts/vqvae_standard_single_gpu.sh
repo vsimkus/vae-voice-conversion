@@ -39,4 +39,4 @@ export DATASET_DIR=${TMP}/data/
 
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
-python train_evaluate_vqvae.py --filepath_to_arguments_json_file=
+python train_evaluate_vqvae.py --filepath_to_arguments_json_file='experiment_configs/vqvae_architecture.json'
