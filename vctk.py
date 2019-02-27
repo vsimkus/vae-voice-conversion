@@ -121,6 +121,8 @@ class VCTK(data.Dataset):
         self.chunk_size = 1000
         self.num_samples = 0
         self.max_len = 0
+        self.mean_len = 0.
+        self.std_len = 0.
         self.cached_pt = 0
 
         if download:
@@ -168,6 +170,8 @@ class VCTK(data.Dataset):
         with open(info_path, "w") as f:
             f.write("num_samples,{}\n".format(num_items))
             f.write("max_len,{}\n".format(self.max_len))
+            f.write("mean_len,{:.4f}\n".format(self.mean_len))
+            f.write("std_len,{:.4f}\n".format(self.std_len))
 
     def _read_info(self):
         info_path = os.path.join(
@@ -175,6 +179,8 @@ class VCTK(data.Dataset):
         with open(info_path, "r") as f:
             self.num_samples = int(f.readline().split(",")[1])
             self.max_len = int(f.readline().split(",")[1])
+            self.mean_len = float(f.readline().split(",")[1])
+            self.std_len = float(f.readline().split(",")[1])
 
     def download(self):
         """Download the VCTK data if it doesn't exist in processed_folder already."""
@@ -223,6 +229,7 @@ class VCTK(data.Dataset):
         audios = make_manifest(dset_abs_path)
         ids = load_ids(dset_abs_path)
         self.max_len = 0
+        all_lengths = []
         print("Found {} audio files".format(
             len(audios)))
         for n in range(len(audios) // self.chunk_size + 1):
@@ -241,6 +248,7 @@ class VCTK(data.Dataset):
                     labels.append(ids[f_rel_no_ext.split('_')[0]])
                     self.max_len = sig.size(1) if sig.size(
                         1) > self.max_len else self.max_len
+                    all_lengths.append(sig.size(1))
             # sort sigs/labels: longest -> shortest
             tensors, labels = zip(*[(b, c) for (a, b, c) in sorted(
                 zip(lengths, tensors, labels), key=lambda x: x[0], reverse=True)])
@@ -253,6 +261,8 @@ class VCTK(data.Dataset):
                     "vctk_{:04d}.pt".format(n)
                 )
             )
+        self.mean_len = np.mean(all_lengths)
+        self.std_len = np.std(all_lengths, ddof=1)
         self._write_info((n * self.chunk_size) + i + 1)
         if not self.dev_mode:
             shutil.rmtree(raw_abs_dir, ignore_errors=True)
