@@ -12,10 +12,9 @@ torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
 # Load dataset
 dataset = VCTK(root='data', download=False, transform=transforms.Compose([
-    transforms.Scale(),
     transforms.PadTrim(max_len=args.input_max_len),
     # TODO decide on number of channels here
-    transforms.MuLawEncoding(quantization_channels=256)
+    # transforms.MuLawEncoding(quantization_channels=256)
 ]))
 
 # Split train and test/validation sets
