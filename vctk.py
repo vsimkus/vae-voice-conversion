@@ -1,5 +1,6 @@
 from __future__ import print_function
 import torch.utils.data as data
+import numpy as np
 import os
 import os.path
 import shutil
