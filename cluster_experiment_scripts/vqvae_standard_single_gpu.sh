@@ -27,9 +27,12 @@ export PYTHON_PATH=$PATH
 mkdir -p /disk/scratch/${TEAM_ID}
 
 export TMPDIR=/disk/scratch/${TEAM_ID}/
+
 export TMP=/disk/scratch/${TEAM_ID}
 
-mkdir -p ${TMP}/data/
+export DATASET_DIR=${TMP}/data/
+
+mkdir -p ${DATASET_DIR}
 
 rsync -ua --progress /home/${STUDENT_ID}/data/ ${TMP}/data/
 unzip -u ${TMP}/data/processed_data.zip -d ${TMP}/data

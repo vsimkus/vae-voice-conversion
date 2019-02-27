@@ -1,8 +1,9 @@
-import os
+yimport os
 
 import torch
 import numpy as np
 import torchaudio_transforms as transforms
+import os
 from arg_extractor import get_args
 from experiment_builder import VQVAEExperimentBuilder
 from model_architectures import VQVAE
@@ -13,8 +14,6 @@ rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
 data_dir = os.environ['DATASET_DIR']
-
-print(data_dir)
 
 # Load dataset
 dataset = VCTKDataset(root=data_dir, transform=transforms.Compose([
