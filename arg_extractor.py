@@ -35,7 +35,8 @@ def get_args():
                         help='Learning rate to use for Adam')
     parser.add_argument('--filepath_to_arguments_json_file', nargs="?", type=str, default=None,
                         help='All configs and model-specific parameters can be set in a json file. If a setting is provided in the json file it will be prefered.')
-    parser.add_argument('--dataset_root_path', type=str, default="data")    
+    parser.add_argument('--dataset_root_path', type=str, default="data")
+    parser.add_argument('--tuning_mode', type=str2bool, default=False, help='Use a smaller dataset split, and discard most of data. Use this for faster feedback and initial tuning of the algorithms')
 
     args = parser.parse_args()
     gpu_id = str(args.gpu_id)

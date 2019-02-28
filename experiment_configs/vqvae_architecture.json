@@ -1,9 +1,9 @@
 {
     "seed": 154367,
-    "batch_size": 32,
+    "batch_size": 8,
     "num_epochs": 1000,
     "input_max_len": 100000,
-    "comment_input_max_len": "We've chose the max input length as mean+2*std of audio lengths.",
+    "comment_input_max_len": "We've chosen the max input length as mean+2*std of audio lengths.",
     "commit_coefficient": 0.25,
     "comment_commit_coefficient": "Should be in the range 0.1-2.0.",
     "learning_rate": 1e-4,

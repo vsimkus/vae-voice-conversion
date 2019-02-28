@@ -3,6 +3,7 @@
 import torch
 import argparse
 from vctk_preprocessor import VCTKPreprocessor
+from vctk_dataset import VCTKDataset
 
 parser = argparse.ArgumentParser(
         description='VCTK preprocessing helper script.')
@@ -11,6 +12,8 @@ args = parser.parse_args()
 
 data = VCTKPreprocessor(args.path, downsample=True, dev_mode=True)
 
-data_loader = torch.utils.data.DataLoader(data,
+# Check we can load it.
+dataset = VCTKDataset(root=args.path)
+data_loader = torch.utils.data.DataLoader(dataset,
                                           batch_size=1,
                                           shuffle=True)
