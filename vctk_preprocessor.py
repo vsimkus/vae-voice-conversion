@@ -7,6 +7,7 @@ import shutil
 import errno
 import torch
 import torchaudio
+from random import shuffle
 
 AUDIO_EXTENSIONS = [
     '.wav', '.mp3', '.flac', '.sph', '.ogg', '.opus',
@@ -18,7 +19,7 @@ def is_audio_file(filename):
     return any(filename.endswith(extension) for extension in AUDIO_EXTENSIONS)
 
 
-def make_manifest(dir):
+def make_manifest(dir, shuffle_order=False):
     audios = []
     dir = os.path.expanduser(dir)
     for target in sorted(os.listdir(dir)):
@@ -32,6 +33,10 @@ def make_manifest(dir):
                     path = os.path.join(root, fname)
                     item = path
                     audios.append(item)
+    
+    if shuffle_order:
+        shuffle(audios)
+
     return audios
 
 
@@ -96,6 +101,7 @@ class VCTKPreprocessor():
 
     Args:
         root (string): Root directory of dataset where the dataset should be stored in vctk/raw/, vctk/processed/ directories.
+        shuffle_order (bool, optional): if true, shuffle the audio files across the chunk-files.
         dev_mode(bool, optional): if true, clean up is not performed on raw
             files.  Useful to keep raw audio and transcriptions.
     """
@@ -104,9 +110,10 @@ class VCTKPreprocessor():
     zip_path = 'VCTK-Corpus.zip'  # path to local zip file
     dset_path = 'VCTK-Corpus'
 
-    def __init__(self, root, downsample=True, dev_mode=True):
+    def __init__(self, root, downsample=True, shuffle_order=False, dev_mode=True):
         self.root = os.path.expanduser(root)
         self.downsample = downsample
+        self.shuffle_order = shuffle_order
         self.dev_mode = dev_mode
         self.data = []
         self.labels = []
@@ -176,7 +183,7 @@ class VCTKPreprocessor():
             os.path.join(dset_abs_path, "COPYING"),
             os.path.join(processed_abs_dir, "VCTK_COPYING")
         )
-        audios = make_manifest(dset_abs_path)
+        audios = make_manifest(dset_abs_path, self.shuffle_order)
         ids = load_ids(dset_abs_path)
         self.max_len = 0
         all_lengths = []
