@@ -189,16 +189,14 @@ class VCTKPreprocessor():
             st_idx = n * self.chunk_size
             end_idx = st_idx + self.chunk_size
             for i, f in enumerate(audios[st_idx:end_idx]):
-                txt_dir = os.path.dirname(f).replace("wav48", "txt")
-                if os.path.exists(txt_dir):
-                    f_rel_no_ext = os.path.basename(f).rsplit(".", 1)[0]
-                    sig = read_audio(f, downsample=self.downsample)[0]
-                    tensors.append(sig)
-                    lengths.append(sig.size(1))
-                    labels.append(ids[f_rel_no_ext.split('_')[0]])
-                    self.max_len = sig.size(1) if sig.size(
-                        1) > self.max_len else self.max_len
-                    all_lengths.append(sig.size(1))
+                f_rel_no_ext = os.path.basename(f).rsplit(".", 1)[0]
+                sig = read_audio(f, downsample=self.downsample)[0]
+                tensors.append(sig)
+                lengths.append(sig.size(1))
+                labels.append(ids[f_rel_no_ext.split('_')[0]])
+                self.max_len = sig.size(1) if sig.size(
+                    1) > self.max_len else self.max_len
+                all_lengths.append(sig.size(1))
             # sort sigs/labels: longest -> shortest
             tensors, labels = zip(*[(b, c) for (a, b, c) in sorted(
                 zip(lengths, tensors, labels), key=lambda x: x[0], reverse=True)])

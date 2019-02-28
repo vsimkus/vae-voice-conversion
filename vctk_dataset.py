@@ -55,6 +55,10 @@ class VCTKDataset(data.Dataset):
             self.data, self.labels = torch.load(os.path.join(
                 self.root, self.processed_folder, "vctk_{:04d}.pt".format(self.cached_pt)))
         index = index % self.chunk_size
+        # TODO: reprocess data and remove these two lines below.
+        # Temp workaround since the data on cluster is bad
+        if index >= len(self.data):
+            index = len(self.data)-1
         audio, target = self.data[index], self.labels[index]
 
         if self.transform is not None:

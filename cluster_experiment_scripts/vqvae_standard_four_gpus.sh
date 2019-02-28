@@ -2,7 +2,7 @@
 #SBATCH -N 1	  # nodes requested
 #SBATCH -n 1	  # tasks requested
 #SBATCH --partition=Standard
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:4
 #SBATCH --mem=12000  # memory in Mb
 #SBATCH --time=0-08:00:00
 
@@ -39,9 +39,10 @@ export DATASET_DIR=${TMP}/data/processed_data/
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
 echo "Starting train_evaluate_vqvae.py"
+# export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
 python train_evaluate_vqvae.py \
                 --use_gpu=True \
-                --gpu_id='0,1' \
+                --gpu_id='0,1,2,3' \
                 --experiment_name='vqvae_init_exp' \
                 --filepath_to_arguments_json_file='experiment_configs/vqvae_architecture.json' \
                 --dataset_root_path=${DATASET_DIR} 
