@@ -29,7 +29,7 @@ val_data = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, 
 test_data = val_data
 
 vqvae_model = VQVAE(
-    input_shape=(args.batch_size, 1, args.input_max_len),
+    input_shape=(1, 1, args.input_max_len),
     encoder_arch=args.encoder,
     vq_arch=args.vq,
     generator_arch=args.generator,
