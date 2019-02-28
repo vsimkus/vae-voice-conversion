@@ -35,6 +35,7 @@ def make_manifest(dir, shuffle_order=False):
                     audios.append(item)
     
     if shuffle_order:
+        print('Shuffling audio sample order.')
         shuffle(audios)
 
     return audios
@@ -139,6 +140,7 @@ class VCTKPreprocessor():
             f.write("max_len,{}\n".format(self.max_len))
             f.write("mean_len,{:.4f}\n".format(self.mean_len))
             f.write("std_len,{:.4f}\n".format(self.std_len))
+            f.write("ids,{}\n".format(self.ids))
 
     def process(self):
         """Process the VCTK data if it doesn't exist in processed_folder already."""
@@ -184,7 +186,7 @@ class VCTKPreprocessor():
             os.path.join(processed_abs_dir, "VCTK_COPYING")
         )
         audios = make_manifest(dset_abs_path, self.shuffle_order)
-        ids = load_ids(dset_abs_path)
+        self.ids = load_ids(dset_abs_path)
         self.max_len = 0
         all_lengths = []
         print("Found {} audio files".format(
@@ -200,7 +202,7 @@ class VCTKPreprocessor():
                 sig = read_audio(f, downsample=self.downsample)[0]
                 tensors.append(sig)
                 lengths.append(sig.size(1))
-                labels.append(ids[f_rel_no_ext.split('_')[0]])
+                labels.append(self.ids[f_rel_no_ext.split('_')[0]])
                 self.max_len = sig.size(1) if sig.size(
                     1) > self.max_len else self.max_len
                 all_lengths.append(sig.size(1))

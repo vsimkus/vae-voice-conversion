@@ -22,12 +22,15 @@ dataset = VCTKDataset(root=dataset_path, transform=transforms.Compose([
 if args.tuning_mode:
     # Split train and test/validation sets
     train_length = int(0.25*len(dataset)) # 25% for training,
-    val_length = int(0.5*len(dataset)) # 5% for test/validation, and discard the rest
-    train_dataset, val_dataset, _ = torch.utils.data.random_split(dataset, lengths=[train_length, val_length, len(dataset) - train_length - val_length])
+    val_length = int(0.05*len(dataset)) # 5% for test/validation, and discard the rest
+    print('Running in tuning mode, with train set size {} and val size {}'.format(train_length, val_length))
+    train_dataset = torch.utils.data.Subset(dataset, range(train_length))
+    val_dataset = torch.utils.data.Subset(dataset, range(train_length, train_length+val_length))
 else: 
     # Split train and test/validation sets
     train_length = int(0.9*len(dataset)) # 90% for training, and 10% for test/validation
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, lengths=[train_length, len(dataset)-train_length])
+    train_dataset = torch.utils.data.Subset(dataset, range(train_length))
+    val_dataset = torch.utils.data.Subset(dataset, range(train_length, len(dataset)))
 
 # Create data loaders
 train_data = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)

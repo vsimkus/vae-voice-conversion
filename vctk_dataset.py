@@ -9,6 +9,7 @@ import torch
 class VCTKDataset(data.Dataset):
     """`VCTK <http://homepages.inf.ed.ac.uk/jyamagis/page3/page58/page58.html>`_ Dataset.
     `alternate url <http://datashare.is.ed.ac.uk/handle/10283/2651>`
+    Based on torchaudio vctk.py <https://github.com/pytorch/audio>
 
     Args:
         root (string): Root directory of dataset where ``vctk/processed/training.pt``
