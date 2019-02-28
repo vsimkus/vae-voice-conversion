@@ -5,6 +5,7 @@ from arg_extractor import get_args
 from experiment_builder import VQVAEExperimentBuilder
 from model_architectures import VQVAE
 from vctk_dataset import VCTKDataset
+from samplers import ChunkEfficientRandomSampler
 
 args = get_args()  # get arguments from command line
 rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
@@ -33,8 +34,8 @@ else:
     val_dataset = torch.utils.data.Subset(dataset, range(train_length, len(dataset)))
 
 # Create data loaders
-train_data = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
-val_data = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, shuffle=True, num_workers=2)
+train_data = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=3, sampler=ChunkEfficientRandomSampler(train_dataset, 1000))
+val_data = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, num_workers=3, sampler=ChunkEfficientRandomSampler(train_dataset, 1000))
 test_data = val_data
 
 vqvae_model = VQVAE(

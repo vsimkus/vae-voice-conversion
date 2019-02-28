@@ -41,6 +41,7 @@ class ExperimentBuilder(nn.Module):
             os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id  # sets the main GPU to be the one at index 0 (on multi gpu machines you can choose which one you want to use by using the relevant GPU ID)
             print("use GPU")
             print("GPU ID {}".format(gpu_id))
+            print('Using {} GPUs'.format(torch.cuda.device_count()))
         else:
             print("use CPU")
             self.device = torch.device('cpu')  # sets the device to be CPU
@@ -264,6 +265,8 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         super(VQVAEExperimentBuilder, self).__init__(network_model, experiment_name, num_epochs,
                 train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1)
         self.commit_coefficient = commit_coefficient
+
+        self.criterion = nn.MSELoss().to(self.device) # send the loss computation to the GPU
 
     def run_train_iter(self, x, y):
         self.train()  # sets model to training mode (in case batch normalization or other methods have different procedures for training and evaluation)
