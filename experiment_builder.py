@@ -172,7 +172,9 @@ class ExperimentBuilder(nn.Module):
             current_epoch_metrics = defaultdict(list)
 
             with tqdm.tqdm(total=len(self.train_data)) as pbar_train:  # create a progress bar for training
+                data_fetch_start_time = time.time()
                 for idx, (x, y) in enumerate(self.train_data):  # get data batches
+                    data_fetch_time = time.time() - data_fetch_start_time
                     metrics = self.run_train_iter(x=x, y=y)  # take a training iter step
 
                     # Append metrics from the current iteration
@@ -181,8 +183,10 @@ class ExperimentBuilder(nn.Module):
 
                     # Format progress bar description
                     description = (', ').join(['{}: {:.4f}'.format(key, value) for key, value in metrics.items()])
-                    pbar_train.set_description(description)
+                    times = ' data_fetch_time: {:.4f}'.format(data_fetch_time)
+                    pbar_train.set_description(description + times)
                     pbar_train.update(1)
+                    data_fetch_start_time = time.time()
 
             with tqdm.tqdm(total=len(self.val_data)) as pbar_val:  # create a progress bar for validation
                 for x, y in self.val_data:  # get data batches
@@ -271,8 +275,11 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         x = x.to(device=self.device)
         y = y.to(device=self.device)
 
+        forward_start_time = time.time()
         x_out, z_emb, z_encoder = self.model.forward(x, y)
+        forward_time = time.time() - forward_start_time
 
+        loss_start_time = time.time()
         # Reconstruction loss
         loss_recons = F.mse_loss(x_out, x)
 
@@ -283,17 +290,23 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         loss_commit = F.mse_loss(z_emb, z_encoder.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
+        loss_time = time.time() - loss_start_time
 
+        backward_start_time = time.time()
         self.optimizer.zero_grad()  # set all weight grads from previous training iters to 0
         total_loss.backward()  # backpropagate to compute gradients for current iter loss
 
         self.optimizer.step()  # update network parameters
+        backward_time = time.time() - backward_start_time
 
         metrics = {}
         metrics['loss'] = total_loss.data.detach().cpu().numpy()
         metrics['loss_recons'] = loss_recons.data.detach().cpu().numpy()
         metrics['loss_vq'] = loss_vq.data.detach().cpu().numpy()
         metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
+        metrics['forward_time'] = forward_time
+        metrics['backward_time'] = backward_time
+        metrics['loss_time'] = loss_time
         return metrics
 
     def run_evaluation_iter(self, x, y):
