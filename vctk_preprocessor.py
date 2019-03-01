@@ -46,9 +46,9 @@ def read_audio(fp, downsample=True, trim_silence=True):
         E.set_input_file(fp)
 
         if trim_silence:
-            E.append_effect_to_chain("silence", [1, 100, 0.71])
+            E.append_effect_to_chain("silence", [1, 100, 1])
             E.append_effect_to_chain("reverse")
-            E.append_effect_to_chain("silence", [1, 100, 0.71])
+            E.append_effect_to_chain("silence", [1, 100, 1])
             E.append_effect_to_chain("reverse")
 
         if downsample:
