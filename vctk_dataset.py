@@ -2,8 +2,6 @@ import torch.utils.data as data
 import numpy as np
 import os
 import os.path
-import shutil
-import errno
 import torch
 
 class VCTKDataset(data.Dataset):

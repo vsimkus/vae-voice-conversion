@@ -64,7 +64,8 @@ class ExperimentBuilder(nn.Module):
                                     lr=learning_rate,
                                     weight_decay=weight_decay_coefficient)
         # Generate the directory names
-        self.experiment_folder = os.path.abspath(experiment_name)
+        self.experiment_root = os.path.abspath('experiments')
+        self.experiment_folder = os.path.abspath(os.path.join(self.experiment_root, experiment_name))
         self.experiment_logs = os.path.abspath(os.path.join(self.experiment_folder, "result_outputs"))
         self.experiment_saved_models = os.path.abspath(os.path.join(self.experiment_folder, "saved_models"))
         print(self.experiment_folder, self.experiment_logs)
@@ -72,6 +73,9 @@ class ExperimentBuilder(nn.Module):
         # Set best models to be at 0 since we are just starting
         self.best_val_model_idx = 0
         self.best_val_model_loss = 0.
+
+        if not os.path.exists(self.experiment_root):  # If experiment root directory does not exist
+            os.mkdir(self.experiment_root)  # create the experiment root directory
 
         if not os.path.exists(self.experiment_folder):  # If experiment directory does not exist
             os.mkdir(self.experiment_folder)  # create the experiment directory
