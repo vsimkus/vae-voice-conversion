@@ -34,8 +34,8 @@ else:
     val_dataset = torch.utils.data.Subset(dataset, range(train_length, len(dataset)))
 
 # Create data loaders
-train_data = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=3, sampler=ChunkEfficientRandomSampler(train_dataset, 1000))
-val_data = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, num_workers=3, sampler=ChunkEfficientRandomSampler(val_dataset, 1000))
+train_data = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, num_workers=3, sampler=ChunkEfficientRandomSampler(train_dataset, 1500))
+val_data = torch.utils.data.DataLoader(val_dataset, batch_size=args.batch_size, num_workers=3, sampler=ChunkEfficientRandomSampler(val_dataset, 1500))
 test_data = val_data
 
 vqvae_model = VQVAE(

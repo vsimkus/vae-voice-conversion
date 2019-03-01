@@ -8,10 +8,10 @@ for target in sorted(os.listdir(exp_dir)):
     if not os.path.exists(latest_model_path):
         continue
 
-    latest_state = torch.load(f=latest_model_path)
+    latest_state = torch.load(f=latest_model_path, map_location='cpu')
     
     curr_epoch = latest_state['current_epoch_idx']
     best_val_idx = latest_state['best_val_model_idx']
     best_loss = latest_state['best_val_model_loss']
 
-    print('Experiment {} is at epoch: {}, current best val loss: {} at epoch {}'.format(target, curr_epoch, best_loss, best_val_idx))
+    print('Experiment {} is at epoch: {}, current best val loss: {:.6f} at epoch {}'.format(target, curr_epoch, best_loss, best_val_idx))

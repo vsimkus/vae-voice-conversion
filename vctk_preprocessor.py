@@ -40,15 +40,24 @@ def make_manifest(dir, shuffle_order=False):
     return audios
 
 
-def read_audio(fp, downsample=True):
-    if downsample:
+def read_audio(fp, downsample=True, trim_silence=True):
+    if downsample or trim_silence:
         E = torchaudio.sox_effects.SoxEffectsChain()
         E.set_input_file(fp)
-        E.append_effect_to_chain("gain", ["-h"])
-        E.append_effect_to_chain("channels", [1])
-        E.append_effect_to_chain("rate", [16000])
-        E.append_effect_to_chain("gain", ["-rh"])
-        E.append_effect_to_chain("dither", ["-s"])
+
+        if trim_silence:
+            E.append_effect_to_chain("silence", [1, 100, 0.71])
+            E.append_effect_to_chain("reverse")
+            E.append_effect_to_chain("silence", [1, 100, 0.71])
+            E.append_effect_to_chain("reverse")
+
+        if downsample:
+            E.append_effect_to_chain("gain", ["-h"])
+            E.append_effect_to_chain("channels", [1])
+            E.append_effect_to_chain("rate", [16000])
+            E.append_effect_to_chain("gain", ["-rh"])
+            E.append_effect_to_chain("dither", ["-s"])
+    
         sig, sr = E.sox_build_flow_effects()
     else:
         sig, sr = torchaudio.load(fp)
@@ -101,7 +110,9 @@ class VCTKPreprocessor():
 
     Args:
         root (string): Root directory of dataset where the dataset should be stored in vctk/raw/, vctk/processed/ directories.
-        shuffle_order (bool, optional): if true, shuffle the audio files across the chunk-files.
+        downsample (bool, optional): if true, downsample audio files to 16kHz. (default=True)
+        trim_silence (bool, optional): if true, trim trailing silence in from and end of the samples. (default=False)
+        shuffle_order (bool, optional): if true, shuffle the audio files across the chunk-files. (default=False)
         dev_mode(bool, optional): if true, clean up is not performed on raw
             files.  Useful to keep raw audio and transcriptions.
     """
@@ -110,18 +121,22 @@ class VCTKPreprocessor():
     zip_path = 'VCTK-Corpus.zip'  # path to local zip file
     dset_path = 'VCTK-Corpus'
 
-    def __init__(self, root, downsample=True, shuffle_order=False, dev_mode=True):
+    def __init__(self, root, downsample=True, trim_silence=False, shuffle_order=False, dev_mode=True):
         self.root = os.path.expanduser(root)
         self.downsample = downsample
+        self.trim_silence = trim_silence
         self.shuffle_order = shuffle_order
         self.dev_mode = dev_mode
         self.data = []
         self.labels = []
-        self.chunk_size = 1000
+        self.chunk_size = 1500
         self.num_samples = 0
         self.max_len = 0
         self.mean_len = 0.
         self.std_len = 0.
+
+        if self.trim_silence:
+            print('Will trim trailing silence.')
 
         self.process()
 
@@ -198,7 +213,7 @@ class VCTKPreprocessor():
             end_idx = st_idx + self.chunk_size
             for i, f in enumerate(audios[st_idx:end_idx]):
                 f_rel_no_ext = os.path.basename(f).rsplit(".", 1)[0]
-                sig = read_audio(f, downsample=self.downsample)[0]
+                sig = read_audio(f, downsample=self.downsample, trim_silence=self.trim_silence)[0]
                 tensors.append(sig)
                 lengths.append(sig.size(1))
                 labels.append(self.ids[f_rel_no_ext.split('_')[0]])
