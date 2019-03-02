@@ -205,7 +205,7 @@ class Generator(nn.Module):
         
         # TODO: maybe add another simple layer?
         output_conv = nn.Conv1d(in_channels=x.shape[1], 
-                        out_channels=self.kernel_sizes[-1],
+                        out_channels=self.num_residual_channels[-1],
                         kernel_size=1,
                         stride=1,
                         padding=0)
