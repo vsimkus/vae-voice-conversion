@@ -8,6 +8,10 @@ __pycache__/
 # VS code
 .vscode/
 
+# Caches
+.ipynb_checkpoints/
+.pytest_cache/
+
 # C extensions
 *.so
 
@@ -15,7 +19,6 @@ __pycache__/
 data/
 audio_out/
 experiments/
-.ipynb_checkpoints/
 
 # Large local files / untracked work
 sandbox/
