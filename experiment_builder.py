@@ -14,7 +14,7 @@ from storage_utils import save_statistics
 
 class ExperimentBuilder(nn.Module):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
-                 test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1):
+                 test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1, print_timings=False):
         """
         Initializes an ExperimentBuilder object. Such an object takes care of running training and evaluation of a deep net
         on a given dataset. It also takes care of saving per epoch models and automatically inferring the best val model
@@ -30,6 +30,7 @@ class ExperimentBuilder(nn.Module):
         :param use_gpu: A boolean indicating whether to use a GPU or not.
         :param gpu_id: A single gpu id, or a comma-separated list of gpu ids.
         :param continue_from_epoch: An int indicating whether we'll start from scrach (-1) or whether we'll reload a previously saved model of epoch 'continue_from_epoch' and continue training from there. If (-2) we'll reload the latest model.
+        :param print_timings: A boolean flag whether to print timings for different parts of the training.
         """
         super(ExperimentBuilder, self).__init__()
         if torch.cuda.is_available() and use_gpu:  # checks whether a cuda gpu is available and whether the gpu flag is True
@@ -46,6 +47,7 @@ class ExperimentBuilder(nn.Module):
             print("use CPU")
             self.device = torch.device('cpu')  # sets the device to be CPU
 
+        self.print_timings = print_timings
         self.experiment_name = experiment_name
         self.model = network_model
         self.model.reset_parameters()
@@ -188,13 +190,17 @@ class ExperimentBuilder(nn.Module):
 
                     # Format progress bar description
                     description = (', ').join(['{}: {:.4f}'.format(key, value) for key, value in metrics.items()])
-                    times = ' data_fetch_time: {:.4f}'.format(data_fetch_time)
-                    pbar_train.set_description(description + times)
+                    if self.print_timings:
+                        times = ' data_fetch_time: {:.4f}'.format(data_fetch_time)
+                        description = description + times
+                    pbar_train.set_description(description)
                     pbar_train.update(1)
                     data_fetch_start_time = time.time()
 
             with tqdm.tqdm(total=len(self.val_data)) as pbar_val:  # create a progress bar for validation
+                data_fetch_start_time = time.time()
                 for x, y in self.val_data:  # get data batches
+                    data_fetch_time = time.time() - data_fetch_start_time
                     metrics = self.run_evaluation_iter(x=x, y=y)  # run a validation iter
 
                     # Append metrics from the current iteration
@@ -203,8 +209,12 @@ class ExperimentBuilder(nn.Module):
 
                     # Format progress bar description
                     description = (', ').join(['{}: {:.4f}'.format(key, value) for key, value in metrics.items()])
+                    if self.print_timings:
+                        times = ' data_fetch_time: {:.4f}'.format(data_fetch_time)
+                        description = description + times
                     pbar_val.set_description(description)
                     pbar_val.update(1)
+                    data_fetch_start_time = time.time()
 
             val_mean_loss = np.mean(current_epoch_metrics['val_loss'])
             if val_mean_loss < self.best_val_model_loss:  # if current epoch's mean val acc is greater than the saved best val acc then
@@ -226,7 +236,7 @@ class ExperimentBuilder(nn.Module):
             # create a string to use to report our epoch metrics
             epoch_elapsed_time = time.time() - epoch_start_time  # calculate time taken for epoch
             epoch_elapsed_time = "{:.4f}".format(epoch_elapsed_time)
-            print("Epoch {}:".format(epoch_idx), out_string, "epoch time", epoch_elapsed_time, "seconds")
+            print("\nEpoch {}:".format(epoch_idx), out_string, "epoch time", epoch_elapsed_time, "seconds")
             self.state['current_epoch_idx'] = epoch_idx
             self.state['best_val_model_loss'] = self.best_val_model_loss
             self.state['best_val_model_idx'] = self.best_val_model_idx
@@ -237,7 +247,7 @@ class ExperimentBuilder(nn.Module):
                             # save model and best val idx and best val acc, using the model dir, model name and model idx
                             model_save_name="train_model", model_idx='latest', state=self.state)
 
-        print("Generating test set evaluation metrics")
+        print("\nGenerating test set evaluation metrics")
         self.load_model(model_save_dir=self.experiment_saved_models, model_idx=self.best_val_model_idx,
                         # load best validation model
                         model_save_name="train_model")
@@ -311,9 +321,10 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         metrics['loss_recons'] = loss_recons.data.detach().cpu().numpy()
         metrics['loss_vq'] = loss_vq.data.detach().cpu().numpy()
         metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
-        metrics['forward_time'] = forward_time
-        metrics['backward_time'] = backward_time
-        metrics['loss_time'] = loss_time
+        if self.print_timings:
+            metrics['forward_time'] = forward_time
+            metrics['backward_time'] = backward_time
+            metrics['loss_time'] = loss_time
         return metrics
 
     def run_evaluation_iter(self, x, y):
@@ -326,8 +337,11 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         x = x.to(self.device)
         y = y.to(self.device)
 
+        forward_start_time = time.time()
         x_out, z_emb, z_encoder = self.model.forward(x, y)  # forward the data in the model
+        forward_time = time.time() - forward_start_time
 
+        loss_start_time = time.time()
         # Reconstruction loss
         loss_recons = F.mse_loss(x_out, x)
 
@@ -338,12 +352,16 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         loss_commit = F.mse_loss(z_emb, z_encoder.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
+        loss_time = time.time() - loss_start_time
 
         metrics = {}
         metrics['loss'] = total_loss.data.detach().cpu().numpy()
         metrics['loss_recons'] = loss_recons.data.detach().cpu().numpy()
         metrics['loss_vq'] = loss_vq.data.detach().cpu().numpy()
         metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
+        if self.print_timings:
+            metrics['forward_time'] = forward_time
+            metrics['loss_time'] = loss_time
         return metrics
 
     def convert(self, x, y):
