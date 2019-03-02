@@ -15,7 +15,7 @@ __pycache__/
 data/
 audio_out/
 experiments/
-jupyter/
+.ipynb_checkpoints/
 
 # Large local files / untracked work
 sandbox/
