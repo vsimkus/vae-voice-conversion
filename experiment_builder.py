@@ -164,6 +164,7 @@ class ExperimentBuilder(nn.Module):
         :param model_idx: The index to save the model with.
         :return: best val idx and best val model acc, also it loads the network state into the system state without returning it
         """
+        print('Loading model {}, at epoch {}'.format(model_save_name, model_idx))
         state = torch.load(f=os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(model_idx))))
         self.load_state_dict(state_dict=state['network'])
         return state['best_val_model_idx'], state['best_val_model_loss'], state
