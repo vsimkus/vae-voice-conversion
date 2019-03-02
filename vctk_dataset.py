@@ -28,7 +28,7 @@ class VCTKDataset(data.Dataset):
         self.target_transform = target_transform
         self.data = []
         self.labels = []
-        self.chunk_size = 1000
+        self.chunk_size = 1500
         self.num_samples = 0
         self.max_len = 0
         self.mean_len = 0.
