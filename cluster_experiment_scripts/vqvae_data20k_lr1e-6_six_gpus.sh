@@ -32,7 +32,7 @@ export TMP=/disk/scratch/${TEAM_ID}
 mkdir -p ${TMP}/data/
 
 rsync -ua --progress /home/${STUDENT_ID}/data/vctk.zip ${TMP}/data/
-unzip -u ${TMP}/data/vctk.zip -d ${TMP}/data
+unzip -uo ${TMP}/data/vctk.zip -d ${TMP}/data
 
 export DATASET_DIR=${TMP}/data/
 
