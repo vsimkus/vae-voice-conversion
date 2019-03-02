@@ -204,6 +204,13 @@ class Generator(nn.Module):
             print(x.shape)
         
         # TODO: maybe add another simple layer?
+        output_conv = nn.Conv1d(in_channels=x.shape[1], 
+                        out_channels=self.kernel_sizes[-1],
+                        kernel_size=1,
+                        stride=1,
+                        padding=0)
+        self.layer_dict['output_conv'] = output_conv
+        x = output_conv(x)
     
     def forward(self, input, speaker):
         num_layers = len(self.kernel_sizes)
@@ -213,7 +220,7 @@ class Generator(nn.Module):
         for i in range(num_layers):
             out = self.layer_dict['cond_gated_trans_conv_{}'.format(i)](out, speaker_code)
         
-        return out
+        return torch.tanh(self.layer_dict['output_conv'](out))
     
     def reset_parameters(self):
         """
@@ -258,6 +265,8 @@ class VectorQuantizer(nn.Module):
         # We prevent decoder gradients from reaching embeddings with weight.detach()
         # The gradients should still backpropagate to the inputs (st -- straight-through)
         quantized_st, latents = QuantizeVector.apply(input, self.embedding.weight.detach())
+        # print(input)
+        # print(latents)
         # Change to PyTorch channel first order
         # (batch, time, channel) -> (batch, channel, time)
         quantized_st = quantized_st.permute(0, 2, 1).contiguous()
