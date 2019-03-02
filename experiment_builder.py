@@ -275,9 +275,9 @@ class ExperimentBuilder(nn.Module):
 
 class VQVAEExperimentBuilder(ExperimentBuilder):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
-                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, use_gpu, gpu_id, continue_from_epoch=-1):
+                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, use_gpu, gpu_id, continue_from_epoch=-1, print_timings=False):
         super(VQVAEExperimentBuilder, self).__init__(network_model, experiment_name, num_epochs,
-                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1)
+                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch, print_timings)
         self.commit_coefficient = commit_coefficient
 
         self.criterion = nn.MSELoss().to(self.device) # send the loss computation to the GPU
