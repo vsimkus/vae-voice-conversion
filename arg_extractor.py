@@ -38,6 +38,10 @@ def get_args():
     parser.add_argument('--dataset_root_path', type=str, default="data")
     parser.add_argument('--tuning_mode', type=str2bool, default=False, help='Use a smaller dataset split, and discard most of data. Use this for faster feedback and initial tuning of the algorithms')
 
+    parser.add_argument('--eval_audio_path', nargs='?', type=str, help='[Evaluation] Path to audio file for producing reconstruction.')
+    parser.add_argument('--eval_out_path', nargs='?', type=str, help='[Evaluation] Path to output file for producing reconstruction.')
+    parser.add_argument('--eval_speaker_id', nargs='?', type=int, help='[Evaluation] Speaker id for speaker conversion.')
+
     args = parser.parse_args()
     gpu_id = str(args.gpu_id)
     if args.filepath_to_arguments_json_file is not None:

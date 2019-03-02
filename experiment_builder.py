@@ -346,3 +346,17 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         metrics['loss_commit'] = loss_commit.data.detach().cpu().numpy()
         return metrics
 
+    def convert(self, x, y):
+        self.eval()  # sets the system to evaluation mode
+
+        if type(x) is np.ndarray:
+            x = torch.Tensor(x).float().to(device=self.device) # convert data to pytorch tensors and send to the computation device
+            y = torch.Tensor(y).long().to(device=self.device)
+
+        x = x.to(self.device)
+        y = y.to(self.device)
+
+        x_out, _, _ = self.model.forward(x, y)  # forward the data in the model
+        
+        return x_out
+
