@@ -39,11 +39,12 @@ export DATASET_DIR=${TMP}/data/
 # Activate the relevant virtual environment:
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
-echo "Starting train_vqvae.py"
+
+config_file='vqvae_data20k.json'
+echo "Starting train_vqvae.py on ${config_file}"
 # export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
 python train_vqvae.py \
                 --use_gpu=True \
                 --gpu_id='0,1,2,3,4,5' \
-                --experiment_name='vqvae_init_exp' \
-                --filepath_to_arguments_json_file='experiment_configs/vqvae_architecture.json' \
+                --filepath_to_arguments_json_file="experiment_configs/${config_file}" \
                 --dataset_root_path=${DATASET_DIR} 
