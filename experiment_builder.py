@@ -100,7 +100,7 @@ class ExperimentBuilder(nn.Module):
                 # and the best val acc of that model
                 self.starting_epoch = self.state['current_epoch_idx']+1
             except:
-                print("Model objects cannot be found, initializing a new model and starting from scratch")
+                print("Model objects cannot be found in {}, initializing a new model and starting from scratch".format(self.experiment_saved_models))
                 self.starting_epoch = 0
                 self.state = dict()
 
@@ -164,9 +164,32 @@ class ExperimentBuilder(nn.Module):
         :param model_idx: The index to save the model with.
         :return: best val idx and best val model acc, also it loads the network state into the system state without returning it
         """
-        print('Loading model {}, at epoch {}'.format(model_save_name, model_idx))
-        state = torch.load(f=os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(model_idx))))
-        self.load_state_dict(state_dict=state['network'])
+        print('Loading model {}, at epoch {}.'.format(model_save_name, model_idx))
+        map_location = None
+
+        # This is necessary to load GPU model onto CPU
+        if not (torch.cuda.is_available() and use_gpu):
+            map_location = 'cpu'
+
+        file_path = os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(model_idx)))
+        state = torch.load(f=file_path, map_location=map_location)
+
+        # This is loads a DataParallel model onto simple model, 
+        # Creates a temporary DataParallel model to load the model and then restores to the unwrapped model.
+        # TODO: This won't work if the model was saved without data parallel.
+        if not (torch.cuda.is_available() and use_gpu):
+            # Temporarily save the unwrapped model
+            unwrapped_model = self.model
+
+            # Temporarily wrap the model in DP
+            self.model = nn.DataParallel(self.model)
+            self.load_state_dict(state['network'])
+            
+            # Unwrap the model
+            self.model = unwrapped_model
+        else:
+            self.load_state_dict(state['network'])
+
         return state['best_val_model_idx'], state['best_val_model_loss'], state
 
     def run_experiment(self):
