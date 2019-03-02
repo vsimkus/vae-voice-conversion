@@ -37,6 +37,7 @@ def get_args():
                         help='All configs and model-specific parameters can be set in a json file. If a setting is provided in the json file it will be prefered.')
     parser.add_argument('--dataset_root_path', type=str, default="data")
     parser.add_argument('--tuning_mode', type=str2bool, default=False, help='Use a smaller dataset split, and discard most of data. Use this for faster feedback and initial tuning of the algorithms')
+    parser.add_argument('--print_timings', type=str2bool, default=False, help='Print timings during different stages of training.')
 
     parser.add_argument('--eval_audio_path', nargs='?', type=str, help='[Evaluation] Path to audio file for producing reconstruction.')
     parser.add_argument('--eval_out_path', nargs='?', type=str, help='[Evaluation] Path to output file for producing reconstruction.')

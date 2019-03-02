@@ -54,6 +54,7 @@ vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
                                     gpu_id=args.gpu_id,
                                     use_gpu=args.use_gpu,
                                     continue_from_epoch=args.continue_from_epoch,
+                                    print_timings=args.print_timings,
                                     train_data=train_data,
                                     val_data=val_data,
                                     test_data=test_data)
