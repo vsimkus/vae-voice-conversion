@@ -1,15 +1,21 @@
-    #dropbox stuff
+#dropbox stuff
 *.dropbox*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 
+# VS code
+.vscode/
+
 # C extensions
 *.so
 
-# Datasets
+# Datasets and outputs
 data/
+audio_out/
+experiments/
+jupyter/
 
 # Large local files / untracked work
 sandbox/
