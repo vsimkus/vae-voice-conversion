@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:6
 #SBATCH --mem=12000  # memory in Mb
 #SBATCH --time=0-08:00:00
-#SBATCH --exclude=ladonia[20,24]
+#SBATCH --exclude=landonia[20,24]
 
 export CUDA_HOME=/opt/cuda-9.0.176.1/
 
