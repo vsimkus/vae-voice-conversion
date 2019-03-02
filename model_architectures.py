@@ -200,6 +200,8 @@ class Generator(nn.Module):
             self.layer_dict['cond_gated_trans_conv_{}'.format(i)] = conv
             x = conv(x,h)
             print(x.shape)
+        
+        # TODO: maybe add another simple layer?
     
     def forward(self, input, speaker):
         num_layers = len(self.kernel_sizes)
