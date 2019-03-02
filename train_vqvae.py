@@ -1,19 +1,20 @@
-import torch
 import numpy as np
-import torchaudio_transforms as transforms
 from arg_extractor import get_args
+
+args, device = get_args()  # get arguments from command line
+rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
+
+import torch
+import torchaudio_transforms as transforms
 from experiment_builder import VQVAEExperimentBuilder
 from model_architectures import VQVAE
 from vctk_dataset import VCTKDataset
 from samplers import ChunkEfficientRandomSampler
 
-args = get_args()  # get arguments from command line
-rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 torch.manual_seed(seed=args.seed) # sets pytorch's seed
 
 # Load dataset
 dataset_path = args.dataset_root_path
-print(dataset_path)
 dataset = VCTKDataset(root=dataset_path, transform=transforms.Compose([
     transforms.PadTrim(max_len=args.input_max_len),
     # TODO decide on number of channels here
@@ -64,8 +65,7 @@ vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
                                     weight_decay_coefficient=args.weight_decay_coefficient,
                                     learning_rate=args.learning_rate,
                                     commit_coefficient=args.commit_coefficient,
-                                    gpu_id=args.gpu_id,
-                                    use_gpu=args.use_gpu,
+                                    device=device,
                                     continue_from_epoch=args.continue_from_epoch,
                                     print_timings=args.print_timings,
                                     train_data=train_data,

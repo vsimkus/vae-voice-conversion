@@ -10,11 +10,9 @@ from collections import defaultdict
 
 from storage_utils import save_statistics
 
-
-
 class ExperimentBuilder(nn.Module):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
-                 test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1, print_timings=False):
+                 test_data, weight_decay_coefficient, learning_rate, device, continue_from_epoch=-1, print_timings=False):
         """
         Initializes an ExperimentBuilder object. Such an object takes care of running training and evaluation of a deep net
         on a given dataset. It also takes care of saving per epoch models and automatically inferring the best val model
@@ -27,34 +25,21 @@ class ExperimentBuilder(nn.Module):
         :param test_data: An object of the DataProvider type. Contains the test set.
         :param weight_decay_coefficient: A float indicating the weight decay to use with the adam optimizer.
         :param learning_rate: A float indicating the learning rate to use with the adam optimizer.
-        :param use_gpu: A boolean indicating whether to use a GPU or not.
-        :param gpu_id: A single gpu id, or a comma-separated list of gpu ids.
+        :param device: torch.device to use for training the model. (CPU or GPU(s))
         :param continue_from_epoch: An int indicating whether we'll start from scrach (-1) or whether we'll reload a previously saved model of epoch 'continue_from_epoch' and continue training from there. If (-2) we'll reload the latest model.
         :param print_timings: A boolean flag whether to print timings for different parts of the training.
         """
         super(ExperimentBuilder, self).__init__()
-        if torch.cuda.is_available() and use_gpu:  # checks whether a cuda gpu is available and whether the gpu flag is True
-            if "," in gpu_id:
-                self.device = [torch.device('cuda:{}'.format(idx)) for idx in gpu_id.split(",")]  # sets device to be cuda
-            else:
-                self.device = torch.device('cuda:{}'.format(gpu_id))  # sets device to be cuda
-
-            os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id  # sets the main GPU to be the one at index 0 (on multi gpu machines you can choose which one you want to use by using the relevant GPU ID)
-            print("use GPU")
-            print("GPU ID {}".format(gpu_id))
-            print('Using {} GPUs'.format(torch.cuda.device_count()))
-        else:
-            print("use CPU")
-            self.device = torch.device('cpu')  # sets the device to be CPU
 
         self.print_timings = print_timings
         self.experiment_name = experiment_name
         self.model = network_model
         self.model.reset_parameters()
-        if type(self.device) is list:
-            self.model.to(self.device[0])
-            self.model = nn.DataParallel(module=self.model, device_ids=self.device)
-            self.device = self.device[0]
+        self.device = device
+
+        if torch.cuda.device_count() > 1:
+            self.model.to(self.device)
+            self.model = nn.DataParallel(module=self.model)
         else:
             self.model.to(self.device)  # sends the model from the cpu to the gpu
           # re-initialize network parameters
@@ -165,19 +150,14 @@ class ExperimentBuilder(nn.Module):
         :return: best val idx and best val model acc, also it loads the network state into the system state without returning it
         """
         print('Loading model {}, at epoch {}.'.format(model_save_name, model_idx))
-        map_location = None
-
-        # This is necessary to load GPU model onto CPU
-        if not (torch.cuda.is_available() and use_gpu):
-            map_location = 'cpu'
 
         file_path = os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(model_idx)))
-        state = torch.load(f=file_path, map_location=map_location)
+        state = torch.load(f=file_path, map_location=self.device)
 
         # This is loads a DataParallel model onto simple model, 
         # Creates a temporary DataParallel model to load the model and then restores to the unwrapped model.
         # TODO: This won't work if the model was saved without data parallel.
-        if not (torch.cuda.is_available() and use_gpu):
+        if not (torch.cuda.is_available() and self.device.type=='cuda'):
             # Temporarily save the unwrapped model
             unwrapped_model = self.model
 
@@ -299,9 +279,9 @@ class ExperimentBuilder(nn.Module):
 
 class VQVAEExperimentBuilder(ExperimentBuilder):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
-                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, use_gpu, gpu_id, continue_from_epoch=-1, print_timings=False):
+                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, device, continue_from_epoch=-1, print_timings=False):
         super(VQVAEExperimentBuilder, self).__init__(network_model, experiment_name, num_epochs,
-                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch, print_timings)
+                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, device, continue_from_epoch, print_timings)
         self.commit_coefficient = commit_coefficient
 
         self.criterion = nn.MSELoss().to(self.device) # send the loss computation to the GPU
