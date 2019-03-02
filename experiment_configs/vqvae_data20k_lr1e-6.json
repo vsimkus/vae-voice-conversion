@@ -1,12 +1,12 @@
 {
     "seed": 154367,
-    "experiment_name": "vqvae_data20k",
+    "experiment_name": "vqvae_data20k_lr1e-6",
     "batch_size": 256,
     "num_epochs": 200,
     "input_max_len": 20000,
     "commit_coefficient": 0.25,
     "comment_commit_coefficient": "Should be in the range 0.1-2.0.",
-    "learning_rate": 1e-4,
+    "learning_rate": 1e-6,
     "weight_decay_coefficient": 1e-6,
     "encoder": {
         "kernel_sizes": [4, 4, 4, 4, 4, 4],
