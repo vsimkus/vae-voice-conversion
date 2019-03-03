@@ -1,7 +1,7 @@
 {
     "seed": 154367,
     "experiment_name": "vqvae_lr1e-6",
-    "batch_size": 256,
+    "batch_size": 128,
     "num_epochs": 200,
     "input_max_len": 20000,
     "commit_coefficient": 0.25,
@@ -28,8 +28,8 @@
         "paddings": [3, 2, 3, 2, 1],
         "out_paddings": [0, 0, 0, 1, 0], 
         "comment_out_paddings": "output = (input - 1)*stride - 2*padding + kernel + output_padding",
-        "num_residual_channels": [128, 128, 128, 64, 32],
-        "pre_output_channels": 128,
+        "num_residual_channels": [128, 64, 32, 32, 32],
+        "pre_output_channels": 64,
         "comment_pre_output_channels": "TODO: decide on all the channel dimensionalities.",
         "speaker_dim": 64
     }
