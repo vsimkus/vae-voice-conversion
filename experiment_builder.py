@@ -380,5 +380,5 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
 
         x_out, _, _ = self.model.forward(x, y)  # forward the data in the model
         
-        return torch.max(x_out.data, 1)
+        return torch.argmax(x_out.data, 1)
 
