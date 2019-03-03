@@ -1,6 +1,8 @@
 import argparse
 import json
-
+import os
+import sys
+import GPUtil
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -53,7 +55,52 @@ def get_args():
 
     arg_str = [(str(key), str(value)) for (key, value) in vars(args).items()]
     print(arg_str)
-    return args
+
+    # Temporary solution for incorrect SLURM config
+    if args.use_gpu == True:
+        num_requested_gpus = len(args.gpu_id.split(","))
+        num_received_gpus = len(GPUtil.getAvailable(order='first', limit=8, maxLoad=0.1,
+                                             maxMemory=0.1, includeNan=False,
+                                             excludeID=[], excludeUUID=[]))
+
+        if num_requested_gpus == 1 and num_received_gpus > 1:
+            print("Detected Slurm problem with GPUs, attempting automated fix")
+            gpu_to_use = GPUtil.getAvailable(order='first', limit=num_received_gpus, maxLoad=0.1,
+                                             maxMemory=0.1, includeNan=False,
+                                             excludeID=[], excludeUUID=[])
+            if len(gpu_to_use) > 0:
+                os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_to_use[0])
+                print("Using GPU with ID", gpu_to_use[0])
+            else:
+                print("Not enough GPUs available, please try on another node now, or retry on this node later")
+                sys.exit()
+
+        elif num_requested_gpus > 1 and num_received_gpus > num_requested_gpus:
+            print("Detected Slurm problem with GPUs, attempting automated fix")
+            gpu_to_use = GPUtil.getAvailable(order='first', limit=num_received_gpus,
+                                             maxLoad=0.1,
+                                             maxMemory=0.1, includeNan=False,
+                                             excludeID=[], excludeUUID=[])
+
+            if len(gpu_to_use) >= num_requested_gpus:
+                os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(str(gpu_idx) for gpu_idx in gpu_to_use[:num_requested_gpus])
+                print("Using GPU with ID", gpu_to_use[:num_requested_gpus])
+            else:
+                print("Not enough GPUs available, please try on another node now, or retry on this node later")
+                sys.exit()
+
+
+    import torch
+    args.use_cuda = torch.cuda.is_available()
+
+    if torch.cuda.is_available():  # checks whether a cuda gpu is available and whether the gpu flag is True
+        device = torch.cuda.current_device()
+        print("use {} GPU(s)".format(torch.cuda.device_count()), file=sys.stderr)
+    else:
+        print("use CPU", file=sys.stderr)
+        device = torch.device('cpu')  # sets the device to be CPU
+
+    return args, device
 
 
 class AttributeAccessibleDict(object):

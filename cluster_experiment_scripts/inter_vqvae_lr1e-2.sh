@@ -1,11 +1,10 @@
 #!/bin/sh
 #SBATCH -N 1	  # nodes requested
 #SBATCH -n 1	  # tasks requested
-#SBATCH --partition=Standard
+#SBATCH --partition=Interactive
 #SBATCH --gres=gpu:6
 #SBATCH --mem=12000  # memory in Mb
-#SBATCH --time=0-08:00:00
-#SBATCH --exclude=landonia[20,23,24]
+#SBATCH --time=0-02:00:00
 
 export CUDA_HOME=/opt/cuda-9.0.176.1/
 
@@ -40,11 +39,12 @@ export DATASET_DIR=${TMP}/data/
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
 
-config_file='vqvae_data20k_lr1e-4.json'
+config_file='vqvae_lr1e-2.json'
 echo "Starting train_vqvae.py on ${config_file}"
 # export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
 python train_vqvae.py \
                 --use_gpu=True \
                 --gpu_id='0,1,2,3,4,5' \
                 --filepath_to_arguments_json_file="experiment_configs/${config_file}" \
-                --dataset_root_path=${DATASET_DIR} 
+                --dataset_root_path=${DATASET_DIR} \
+                --print_timings=True

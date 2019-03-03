@@ -4,7 +4,7 @@
 This module provides classes for loading datasets and iterating over batches of
 data points.
 """
-
+from __future__ import print_function
 import pickle
 import gzip
 import numpy as np
@@ -12,6 +12,18 @@ import os
 from pytorch import torch.utils.data.DataLoader as DataLoader
 
 DEFAULT_SEED = 20112018
+from PIL import Image
+import os
+import os.path
+import numpy as np
+import sys
+if sys.version_info[0] == 2:
+    import cPickle as pickle
+else:
+    import pickle
+
+import torch.utils.data as data
+from torchvision.datasets.utils import download_url, check_integrity
 
 class DataProvider(object):
     """Generic data provider."""

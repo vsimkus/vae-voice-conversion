@@ -10,11 +10,9 @@ from collections import defaultdict
 
 from storage_utils import save_statistics
 
-
-
 class ExperimentBuilder(nn.Module):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
-                 test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1, print_timings=False):
+                 test_data, weight_decay_coefficient, learning_rate, device, continue_from_epoch=-1, print_timings=False):
         """
         Initializes an ExperimentBuilder object. Such an object takes care of running training and evaluation of a deep net
         on a given dataset. It also takes care of saving per epoch models and automatically inferring the best val model
@@ -27,34 +25,21 @@ class ExperimentBuilder(nn.Module):
         :param test_data: An object of the DataProvider type. Contains the test set.
         :param weight_decay_coefficient: A float indicating the weight decay to use with the adam optimizer.
         :param learning_rate: A float indicating the learning rate to use with the adam optimizer.
-        :param use_gpu: A boolean indicating whether to use a GPU or not.
-        :param gpu_id: A single gpu id, or a comma-separated list of gpu ids.
+        :param device: torch.device to use for training the model. (CPU or GPU(s))
         :param continue_from_epoch: An int indicating whether we'll start from scrach (-1) or whether we'll reload a previously saved model of epoch 'continue_from_epoch' and continue training from there. If (-2) we'll reload the latest model.
         :param print_timings: A boolean flag whether to print timings for different parts of the training.
         """
         super(ExperimentBuilder, self).__init__()
-        if torch.cuda.is_available() and use_gpu:  # checks whether a cuda gpu is available and whether the gpu flag is True
-            if "," in gpu_id:
-                self.device = [torch.device('cuda:{}'.format(idx)) for idx in gpu_id.split(",")]  # sets device to be cuda
-            else:
-                self.device = torch.device('cuda:{}'.format(gpu_id))  # sets device to be cuda
-
-            os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id  # sets the main GPU to be the one at index 0 (on multi gpu machines you can choose which one you want to use by using the relevant GPU ID)
-            print("use GPU")
-            print("GPU ID {}".format(gpu_id))
-            print('Using {} GPUs'.format(torch.cuda.device_count()))
-        else:
-            print("use CPU")
-            self.device = torch.device('cpu')  # sets the device to be CPU
 
         self.print_timings = print_timings
         self.experiment_name = experiment_name
         self.model = network_model
         self.model.reset_parameters()
-        if type(self.device) is list:
-            self.model.to(self.device[0])
-            self.model = nn.DataParallel(module=self.model, device_ids=self.device)
-            self.device = self.device[0]
+        self.device = device
+
+        if torch.cuda.device_count() > 1:
+            self.model.to(self.device)
+            self.model = nn.DataParallel(module=self.model)
         else:
             self.model.to(self.device)  # sends the model from the cpu to the gpu
           # re-initialize network parameters
@@ -165,19 +150,14 @@ class ExperimentBuilder(nn.Module):
         :return: best val idx and best val model acc, also it loads the network state into the system state without returning it
         """
         print('Loading model {}, at epoch {}.'.format(model_save_name, model_idx))
-        map_location = None
-
-        # This is necessary to load GPU model onto CPU
-        if not (torch.cuda.is_available() and use_gpu):
-            map_location = 'cpu'
 
         file_path = os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(model_idx)))
-        state = torch.load(f=file_path, map_location=map_location)
+        state = torch.load(f=file_path, map_location=self.device)
 
         # This is loads a DataParallel model onto simple model, 
         # Creates a temporary DataParallel model to load the model and then restores to the unwrapped model.
         # TODO: This won't work if the model was saved without data parallel.
-        if not (torch.cuda.is_available() and use_gpu):
+        if not (torch.cuda.is_available()):
             # Temporarily save the unwrapped model
             unwrapped_model = self.model
 
@@ -261,6 +241,10 @@ class ExperimentBuilder(nn.Module):
             epoch_elapsed_time = time.time() - epoch_start_time  # calculate time taken for epoch
             epoch_elapsed_time = "{:.4f}".format(epoch_elapsed_time)
             print("\nEpoch {}:".format(epoch_idx), out_string, "epoch time", epoch_elapsed_time, "seconds")
+            
+            if torch.cuda.is_available():
+                print('CUDA max allocated memory: {}, max cached memory: {}.'.format(torch.cuda.max_memory_allocated(), torch.cuda.max_memory_cached()))
+
             self.state['current_epoch_idx'] = epoch_idx
             self.state['best_val_model_loss'] = self.best_val_model_loss
             self.state['best_val_model_idx'] = self.best_val_model_idx
@@ -299,36 +283,36 @@ class ExperimentBuilder(nn.Module):
 
 class VQVAEExperimentBuilder(ExperimentBuilder):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
-                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, use_gpu, gpu_id, continue_from_epoch=-1, print_timings=False):
+                test_data, weight_decay_coefficient, learning_rate, commit_coefficient, device, continue_from_epoch=-1, print_timings=False):
         super(VQVAEExperimentBuilder, self).__init__(network_model, experiment_name, num_epochs,
-                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch, print_timings)
+                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, device, continue_from_epoch, print_timings)
         self.commit_coefficient = commit_coefficient
 
-        self.criterion = nn.MSELoss().to(self.device) # send the loss computation to the GPU
+        # self.criterion = nn.MSELoss().to(self.device) # send the loss computation to the GPU
 
     def run_train_iter(self, x, y):
         self.train()  # sets model to training mode (in case batch normalization or other methods have different procedures for training and evaluation)
 
         if type(x) is np.ndarray:
-            x = torch.Tensor(x).float().to(device=self.device) # send data to device as torch tensors
+            x = torch.Tensor(x).long().to(device=self.device) # send data to device as torch tensors
             y = torch.Tensor(y).long().to(device=self.device)
 
         x = x.to(device=self.device)
         y = y.to(device=self.device)
 
         forward_start_time = time.time()
-        x_out, z_emb, z_encoder = self.model.forward(x, y)
+        x_out, z_encoder, z_emb = self.model.forward(x, y)
         forward_time = time.time() - forward_start_time
 
         loss_start_time = time.time()
         # Reconstruction loss
-        loss_recons = F.mse_loss(x_out, x)
+        loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
-        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
+        loss_vq = F.mse_loss(z_emb, z_encoder.detach())
 
         # Commitment objective
-        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
+        loss_commit = F.mse_loss(z_encoder, z_emb.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
         loss_time = time.time() - loss_start_time
@@ -355,25 +339,25 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         self.eval()  # sets the system to validation mode
 
         if type(x) is np.ndarray:
-            x = torch.Tensor(x).float().to(device=self.device) # convert data to pytorch tensors and send to the computation device
+            x = torch.Tensor(x).long().to(device=self.device) # convert data to pytorch tensors and send to the computation device
             y = torch.Tensor(y).long().to(device=self.device)
 
         x = x.to(self.device)
         y = y.to(self.device)
 
         forward_start_time = time.time()
-        x_out, z_emb, z_encoder = self.model.forward(x, y)  # forward the data in the model
+        x_out, z_encoder, z_emb = self.model.forward(x, y)  # forward the data in the model
         forward_time = time.time() - forward_start_time
 
         loss_start_time = time.time()
         # Reconstruction loss
-        loss_recons = F.mse_loss(x_out, x)
+        loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
-        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
+        loss_vq = F.mse_loss(z_emb, z_encoder.detach())
 
         # Commitment objective
-        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
+        loss_commit = F.mse_loss(z_encoder, z_emb.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
         loss_time = time.time() - loss_start_time
@@ -400,7 +384,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
 
         x_out, _, _ = self.model.forward(x, y)  # forward the data in the model
         
-        return x_out
+        return torch.argmax(x_out.data, 1)
 
 
 class GANExperimentBuilder(ExperimentBuilder):

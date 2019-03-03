@@ -145,8 +145,9 @@ class VQVAE(nn.Module):
     def build_module(self):
         print('Building VQVAE.')
 
-        x = torch.zeros((self.input_shape))
+        x = torch.zeros((self.input_shape), dtype=torch.long)
         self.encoder = Encoder(input_shape=self.input_shape, 
+                            num_input_quantization_channels=self.encoder_arch.num_input_quantization_channels,
                             kernel_sizes=self.encoder_arch.kernel_sizes,
                             strides=self.encoder_arch.strides,
                             num_residual_channels=self.encoder_arch.num_residual_channels,
@@ -167,7 +168,9 @@ class VQVAE(nn.Module):
                                 dilations=self.generator_arch.dilations,
                                 paddings=self.generator_arch.paddings,
                                 out_paddings=self.generator_arch.out_paddings,
-                                num_residual_channels=self.generator_arch.num_residual_channels)
+                                num_residual_channels=self.generator_arch.num_residual_channels,
+                                pre_output_channels=self.generator_arch.pre_output_channels, 
+                                num_output_quantization_channels=self.encoder_arch.num_input_quantization_channels)
 
         y = torch.zeros((self.input_shape[0]), dtype=torch.long)
 
@@ -181,7 +184,7 @@ class VQVAE(nn.Module):
 
         x_hat = self.generator(z_st, speaker)
 
-        return x_hat, z_emb, z
+        return x_hat, z, z_emb
     
     def reset_parameters(self):
         """
@@ -203,16 +206,31 @@ class Encoder(nn.Module):
     """
     Downsampling encoder with strided convolutions.
     """
-    def __init__(self, input_shape, kernel_sizes, strides, num_residual_channels, latent_dim):
+    def __init__(self, input_shape, num_input_quantization_channels, kernel_sizes, strides, num_residual_channels, latent_dim):
         super(Encoder, self).__init__()
         self.input_shape = input_shape
+        self.num_input_quantization_channels = num_input_quantization_channels
         self.kernel_sizes = kernel_sizes
         self.strides = strides
         self.num_residual_channels = num_residual_channels
         self.latent_dim = latent_dim
 
+        # Dictionary for digital to analog conversion
+        self.init_input_embeddings()
+
         self.layer_dict = nn.ModuleDict()
         self.build_module()
+    
+    def init_input_embeddings(self):
+        self.input_embeddings = nn.Embedding(self.num_input_quantization_channels, 1)
+
+        indices = torch.arange(self.num_input_quantization_channels)
+        # Initialize values from -1 to +1 sequentially.
+        analog_values = torch.arange(start=-1, end=1, step=1/(self.num_input_quantization_channels/2), requires_grad=False)
+
+        self.input_embeddings.weight.data.put_(indices, analog_values)
+        # The dictionary is non-trainable.
+        self.input_embeddings.weight.requires_grad = False
     
     def build_module(self):
         num_layers = len(self.kernel_sizes)
@@ -252,9 +270,8 @@ class Encoder(nn.Module):
         print(x.shape)
     
     def forward(self, input):
-        num_layers = len(self.kernel_sizes)
-        out = input
-        for i in range(num_layers):
+        out = self.input_embeddings(input).squeeze(-1)
+        for i in range(len(self.kernel_sizes)):
             out = self.layer_dict['gated_conv_{}'.format(i)](out)
             # out = self.layer_dict['chomp_conv_{}'.format(i)](out)
         
@@ -273,7 +290,10 @@ class Generator(nn.Module):
     """
     Generator or Decoder in the VAE using transposed 1-dimensional convolutions conditioned on the speaker id.
     """
-    def __init__(self, input_shape, num_speakers, speaker_dim, kernel_sizes, strides, dilations, paddings, out_paddings, num_residual_channels):
+    def __init__(self, input_shape, num_speakers, 
+                speaker_dim, kernel_sizes, strides, dilations, 
+                paddings, out_paddings, num_residual_channels, 
+                pre_output_channels, num_output_quantization_channels):
         super(Generator, self).__init__()
         self.input_shape = input_shape
         self.kernel_sizes = kernel_sizes
@@ -282,6 +302,8 @@ class Generator(nn.Module):
         self.paddings = paddings
         self.out_paddings = out_paddings
         self.num_residual_channels = num_residual_channels
+        self.pre_output_channels = pre_output_channels
+        self.num_output_quantization_channels = num_output_quantization_channels
         self.num_speakers = num_speakers
         self.speaker_dim = speaker_dim
 
@@ -315,7 +337,28 @@ class Generator(nn.Module):
             x = conv(x,h)
             print(x.shape)
         
-        # TODO: maybe add another simple layer?
+        pre_output_conv = nn.Conv1d(in_channels=x.shape[1], 
+                        out_channels=self.pre_output_channels,
+                        kernel_size=1,
+                        stride=1,
+                        padding=0)
+        self.layer_dict['pre_output_conv'] = pre_output_conv
+        x = pre_output_conv(x)
+        print(x.shape)
+
+        pre_output_bn = nn.BatchNorm1d(self.pre_output_channels)
+        self.layer_dict['pre_output_bn'] = pre_output_bn
+        x = pre_output_bn(x)
+        print(x.shape)
+
+        logit_conv = nn.Conv1d(in_channels=x.shape[1],
+                        out_channels=self.num_output_quantization_channels,
+                        kernel_size=1,
+                        stride=1,
+                        padding=0)
+        self.layer_dict['logit_conv'] = logit_conv
+        x = logit_conv(x)
+        print(x.shape)
     
     def forward(self, input, speaker):
         num_layers = len(self.kernel_sizes)
@@ -325,7 +368,11 @@ class Generator(nn.Module):
         for i in range(num_layers):
             out = self.layer_dict['cond_gated_trans_conv_{}'.format(i)](out, speaker_code)
         
-        return out
+        out = self.layer_dict['pre_output_conv'](out)
+        out = self.layer_dict['pre_output_bn'](out)
+        out = F.relu(out)
+
+        return self.layer_dict['logit_conv'](out)
     
     def reset_parameters(self):
         """
@@ -370,6 +417,8 @@ class VectorQuantizer(nn.Module):
         # We prevent decoder gradients from reaching embeddings with weight.detach()
         # The gradients should still backpropagate to the inputs (st -- straight-through)
         quantized_st, latents = QuantizeVector.apply(input, self.embedding.weight.detach())
+        # print(input)
+        # print(latents)
         # Change to PyTorch channel first order
         # (batch, time, channel) -> (batch, channel, time)
         quantized_st = quantized_st.permute(0, 2, 1).contiguous()

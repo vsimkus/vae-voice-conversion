@@ -1,12 +1,13 @@
-import torch
-import torchaudio
 import os.path
 from arg_extractor import get_args
+
+args, device = get_args()
+
+import torch
+import torchaudio
 from experiment_builder import VQVAEExperimentBuilder
 from model_architectures import VQVAE
 from vctk_preprocessor import read_audio
-
-args = get_args() 
 
 assert args.continue_from_epoch == -2 or args.continue_from_epoch > 1, \
     'This script is for evaluation only, please specify the epoch to run, or -2 for latest.'
@@ -34,8 +35,7 @@ vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
                                     weight_decay_coefficient=args.weight_decay_coefficient,
                                     learning_rate=args.learning_rate,
                                     commit_coefficient=args.commit_coefficient,
-                                    gpu_id=args.gpu_id,
-                                    use_gpu=args.use_gpu,
+                                    gpu_id=device,
                                     continue_from_epoch=args.continue_from_epoch,
                                     train_data=None,
                                     val_data=None,
