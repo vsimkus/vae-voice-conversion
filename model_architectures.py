@@ -72,7 +72,7 @@ class VQVAE(nn.Module):
         
         x_hat = self.generator(z_st, speaker)
 
-        return x_hat, z_emb, z
+        return x_hat, z, z_emb
     
     def reset_parameters(self):
         """

@@ -342,7 +342,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         y = y.to(self.device)
 
         forward_start_time = time.time()
-        x_out, z_emb, z_encoder = self.model.forward(x, y)  # forward the data in the model
+        x_out, z_encoder, z_emb = self.model.forward(x, y)  # forward the data in the model
         forward_time = time.time() - forward_start_time
 
         loss_start_time = time.time()
@@ -350,10 +350,10 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
-        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
+        loss_vq = F.mse_loss(z_emb, z_encoder.detach())
 
         # Commitment objective
-        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
+        loss_commit = F.mse_loss(z_encoder, z_emb.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
         loss_time = time.time() - loss_start_time
