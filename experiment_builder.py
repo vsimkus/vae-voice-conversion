@@ -284,13 +284,13 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
                 train_data, val_data, test_data, weight_decay_coefficient, learning_rate, device, continue_from_epoch, print_timings)
         self.commit_coefficient = commit_coefficient
 
-        self.criterion = nn.MSELoss().to(self.device) # send the loss computation to the GPU
+        # self.criterion = nn.MSELoss().to(self.device) # send the loss computation to the GPU
 
     def run_train_iter(self, x, y):
         self.train()  # sets model to training mode (in case batch normalization or other methods have different procedures for training and evaluation)
 
         if type(x) is np.ndarray:
-            x = torch.Tensor(x).float().to(device=self.device) # send data to device as torch tensors
+            x = torch.Tensor(x).long().to(device=self.device) # send data to device as torch tensors
             y = torch.Tensor(y).long().to(device=self.device)
 
         x = x.to(device=self.device)
@@ -302,7 +302,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
 
         loss_start_time = time.time()
         # Reconstruction loss
-        loss_recons = F.mse_loss(x_out, x)
+        loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
         loss_vq = F.mse_loss(z_encoder, z_emb.detach())
@@ -335,7 +335,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         self.eval()  # sets the system to validation mode
 
         if type(x) is np.ndarray:
-            x = torch.Tensor(x).float().to(device=self.device) # convert data to pytorch tensors and send to the computation device
+            x = torch.Tensor(x).long().to(device=self.device) # convert data to pytorch tensors and send to the computation device
             y = torch.Tensor(y).long().to(device=self.device)
 
         x = x.to(self.device)
@@ -347,7 +347,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
 
         loss_start_time = time.time()
         # Reconstruction loss
-        loss_recons = F.mse_loss(x_out, x)
+        loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
         loss_vq = F.mse_loss(z_encoder, z_emb.detach())
@@ -380,5 +380,5 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
 
         x_out, _, _ = self.model.forward(x, y)  # forward the data in the model
         
-        return x_out
+        return torch.max(x_out.data, 1)
 

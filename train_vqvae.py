@@ -17,8 +17,7 @@ torch.manual_seed(seed=args.seed) # sets pytorch's seed
 dataset_path = args.dataset_root_path
 dataset = VCTKDataset(root=dataset_path, transform=transforms.Compose([
     transforms.PadTrim(max_len=args.input_max_len),
-    # TODO decide on number of channels here
-    # transforms.MuLawEncoding(quantization_channels=256)
+    transforms.MuLawEncoding(quantization_channels=args.encoder.num_input_quantization_channels)
 ]))
 
 if args.tuning_mode:

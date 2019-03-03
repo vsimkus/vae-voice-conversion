@@ -9,6 +9,7 @@
     "learning_rate": 1e-6,
     "weight_decay_coefficient": 1e-6,
     "encoder": {
+        "num_input_quantization_channels": 256,
         "kernel_sizes": [4, 4, 4, 4, 4, 4],
         "strides": [2, 2, 2, 2, 2, 2],
         "num_residual_channels": [16, 32, 64, 128, 128, 128]
@@ -26,7 +27,9 @@
         "paddings": [12, 12, 10, 10, 8, 4, 0],
         "out_paddings": [0, 0, 0, 0, 0, 0, 0], 
         "comment_out_paddings": "output = (input - 1)*stride - 2*padding + kernel + output_padding",
-        "num_residual_channels": [128, 128, 128, 64, 32, 16, 1],
+        "num_residual_channels": [128, 128, 128, 64, 32, 32, 32],
+        "pre_output_channels": 128,
+        "comment_pre_output_channels": "TODO: decide on all the channel dimensionalities.",
         "speaker_dim": 64
     }
 }
