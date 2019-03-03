@@ -6,6 +6,7 @@ import tqdm
 import os
 import numpy as np
 import time
+import sys
 from collections import defaultdict
 
 from storage_utils import save_statistics
@@ -85,9 +86,8 @@ class ExperimentBuilder(nn.Module):
                 # and the best val acc of that model
                 self.starting_epoch = self.state['current_epoch_idx']+1
             except:
-                print("Model objects cannot be found in {}, initializing a new model and starting from scratch".format(self.experiment_saved_models))
-                self.starting_epoch = 0
-                self.state = dict()
+                print("Model object cannot be found in {}!".format(self.experiment_saved_models))
+                sys.exit()
 
         # Load model from continue_from_epoch
         elif continue_from_epoch != -1:
@@ -152,7 +152,12 @@ class ExperimentBuilder(nn.Module):
         print('Loading model {}, at epoch {}.'.format(model_save_name, model_idx))
 
         file_path = os.path.join(model_save_dir, "{}_{}".format(model_save_name, str(model_idx)))
-        state = torch.load(f=file_path, map_location=self.device)
+        if not (torch.cuda.is_available()):
+            map_location='cpu'
+        else:
+            map_location=None
+
+        state = torch.load(f=file_path, map_location=map_location)
 
         # This is loads a DataParallel model onto simple model, 
         # Creates a temporary DataParallel model to load the model and then restores to the unwrapped model.
