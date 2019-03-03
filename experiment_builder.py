@@ -241,6 +241,9 @@ class ExperimentBuilder(nn.Module):
             epoch_elapsed_time = time.time() - epoch_start_time  # calculate time taken for epoch
             epoch_elapsed_time = "{:.4f}".format(epoch_elapsed_time)
             print("\nEpoch {}:".format(epoch_idx), out_string, "epoch time", epoch_elapsed_time, "seconds")
+            if self.device.type == 'cuda':
+                print('CUDA max allocated memory: {}, max cached memory: {}.'.format(torch.cuda.max_memory_allocated(), torch.cuda.max_memory_cached))
+
             self.state['current_epoch_idx'] = epoch_idx
             self.state['best_val_model_loss'] = self.best_val_model_loss
             self.state['best_val_model_idx'] = self.best_val_model_idx
