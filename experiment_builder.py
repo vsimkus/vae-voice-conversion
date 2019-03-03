@@ -391,3 +391,96 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         
         return torch.argmax(x_out.data, 1)
 
+
+class GANExperimentBuilder(ExperimentBuilder):
+    def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
+                test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch=-1, print_timings=False):
+        super(GANExperimentBuilder, self).__init__(network_model, experiment_name, num_epochs,
+                train_data, val_data, test_data, weight_decay_coefficient, learning_rate, use_gpu, gpu_id, continue_from_epoch, print_timings)
+
+        self.criterion = nn.BCELoss().to(self.device) # send the loss computation to the GPU
+
+    def run_train_iter(self, x, y):
+        self.train()  # sets model to training mode (in case batch normalization or other methods have different procedures for training and evaluation)
+
+        if type(x) is np.ndarray:
+            x = torch.Tensor(x).float().to(device=self.device) # send data to device as torch tensors
+            y = torch.Tensor(y).long().to(device=self.device)
+
+        x = x.to(device=self.device)
+        y = y.to(device=self.device)
+
+        real_correct = torch.Tensor([x.shape[0], 1]).fill_(1.0)
+        fake_correct = torch.Tensor([x.shape[0], 1]).fill_(0.0)
+
+        generator_latent = torch.Tensor(np.random.normal(0, 1, (x.shape[0], self.model.generator_arch.latent_dim, self.model.generator_arch.latent_length)))
+
+        forward_start_time = time.time()
+        x_hat, real_pred, fake_pred = self.model.forward(x, y, generator_latent)
+        forward_time = time.time() - forward_start_time
+
+        loss_start_time = time.time()
+        # Binary Cross Entropy - Real
+        real_loss = F.bse_loss(real_pred, real_correct)
+
+        # Binary Cross Entropy - Fake
+        fake_loss = F.bse_loss(fake_pred, fake_correct)
+
+        total_loss = (real_loss + fake_loss) / 2
+        loss_time = time.time() - loss_start_time
+
+        backward_start_time = time.time()
+        self.optimizer.zero_grad()  # set all weight grads from previous training iters to 0
+        total_loss.backward()  # backpropagate to compute gradients for current iter loss
+
+        self.optimizer.step()  # update network parameters
+        backward_time = time.time() - backward_start_time
+
+        metrics = {}
+        metrics['loss'] = total_loss.data.detach().cpu().numpy()
+        metrics['real_loss'] = real_loss.data.detach().cpu().numpy()
+        metrics['fake_loss'] = fake_loss.data.detach().cpu().numpy()
+        if self.print_timings:
+            metrics['forward_time'] = forward_time
+            metrics['backward_time'] = backward_time
+            metrics['loss_time'] = loss_time
+        return metrics
+
+    def run_evaluation_iter(self, x, y):
+        self.eval()  # sets the system to validation mode
+
+                if type(x) is np.ndarray:
+            x = torch.Tensor(x).float().to(device=self.device) # send data to device as torch tensors
+            y = torch.Tensor(y).long().to(device=self.device)
+
+        x = x.to(device=self.device)
+        y = y.to(device=self.device)
+
+        real_correct = torch.Tensor([x.shape[0], 1]).fill_(1.0)
+        fake_correct = torch.Tensor([x.shape[0], 1]).fill_(0.0)
+
+        generator_latent = torch.Tensor(np.random.normal(0, 1, (x.shape[0], self.model.generator_arch.latent_dim, self.model.generator_arch.latent_length)))
+
+        forward_start_time = time.time()
+        x_hat, real_pred, fake_pred = self.model.forward(x, y, generator_latent)
+        forward_time = time.time() - forward_start_time
+
+        loss_start_time = time.time()
+        # Binary Cross Entropy - Real
+        real_loss = F.bse_loss(real_pred, real_correct)
+
+        # Binary Cross Entropy - Fake
+        fake_loss = F.bse_loss(fake_pred, fake_correct)
+
+        total_loss = (real_loss + fake_loss) / 2
+        loss_time = time.time() - loss_start_time
+        
+        metrics = {}
+        metrics['loss'] = total_loss.data.detach().cpu().numpy()
+        metrics['real_loss'] = real_loss.data.detach().cpu().numpy()
+        metrics['fake_loss'] = fake_loss.data.detach().cpu().numpy()
+        if self.print_timings:
+            metrics['forward_time'] = forward_time
+            metrics['loss_time'] = loss_time
+        return metrics
+

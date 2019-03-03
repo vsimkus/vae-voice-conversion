@@ -14,10 +14,122 @@ class VAEGAN(nn.Module):
         super(VAEGAN, self).__init__()
         raise NotImplementedError
 
+class GAN(nn.Module):
+    def __init__(self, input_shape, discriminator_arch, generator_arch, num_speakers):
+        super(GAN, self).__init__()
+        self.input_shape = input_shape
+        self.discriminator_arch = discriminator_arch
+        self.generator_arch = generator_arch
+        self.num_speakers = num_speakers
+
+        self.build_module()
+
+    def build_module(self):
+        print("Building GAN.")
+
+        #x = torch.zeros((self.input_shape))
+
+        self.generator = Generator(input_shape=[1, self.generator_arch.latent_dim, self.generator_arch.latent_length],
+                            num_speakers=self.num_speakers,
+                            speaker_dim=self.generator_arch.speaker_dim,
+                            kernel_sizes=self.generator_arch.kernel_sizes,
+                            strides=self.generator_arch.strides,
+                            dilations=self.generator_arch.dilations,
+                            paddings=self.generator_arch.paddings,
+                            out_paddings=self.generator_arch.out_paddings,
+                            num_residual_channels=self.generator_arch.num_residual_channels)
+
+        self.discriminator = Discriminator(input_shape=self.input_shape,
+                                            kernel_sizes=self.discriminator_arch.kernel_sizes,
+                                            strides=self.discriminator_arch.strides,
+                                            num_residual_channels=self.discriminator_arch.num_residual_channels)
+
+        #distr = normal.Normal(0.0, 1.0)
+        #z = distr.sample(self.generator.input_shape)
+        #h = self.generator.speaker_dict(torch.rand(1) * self.num_speakers)
+
+    def forward(self, input, speaker, generator_latent):
+
+        x_hat = self.generator(generator_latent, speaker)
+        real_pred = self.discriminator(input)
+        fake_pred = self.discriminator(x_hat)
+
+        return x_hat, real_pred, fake_pred
+
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        # for item in self.layer_dict.children():
+        self.generator.reset_parameters()
+        self.discriminator.reset_parameters()
+
 class Discriminator(nn.Module):
-    def __init__(self):
+    def __init__(self, input_shape, kernel_sizes, strides, num_residual_channels):
         super(Discriminator, self).__init__()
-        raise NotImplementedError
+        self.input_shape = input_shape
+        self.kernel_sizes = kernel_sizes
+        self.strides = strides
+        self.num_residual_channels = num_residual_channels
+
+        self.layer_dict = nn.ModuleDict()
+        self.build_module()
+
+    def build_module(self):
+        num_layers = len(self.kernel_sizes)
+
+        x = torch.zeros((self.input_shape))
+        for i in range(num_layers):
+            gated_conv = GatedConv1d(in_channels=x.shape[1],
+                                    out_channels=self.num_residual_channels[i],
+                                    kernel_size=self.kernel_sizes[i],
+                                    stride=self.strides[i],
+                                    dilation=1)
+            self.layer_dict['gated_conv_{}'.format(i)] = gated_conv
+
+            x = gated_conv(x)
+
+            print(x.shape)
+
+        final_conv = nn.Conv1d(in_channels=x.shape[1],
+                out_channels=1,
+                kernel_size=1,
+                stride=1,
+                padding=0)
+
+        self.layer_dict['final_conv'] = final_conv
+        x = final_conv(x)
+        print(x.shape)
+
+        fully_connected = nn.Linear(in_features=x.shape[2], out_features=1)
+        self.layer_dict['fully_connected'] = fully_connected
+        x = fully_connected(x)
+        print(x.shape)
+
+        sigmoid = nn.Sigmoid()
+        self.layer_dict['sigmoid'] = sigmoid
+        x = sigmoid(x)
+        print(x.shape)
+
+    def forward(self, input):
+        num_layers = len(self.kernel_sizes)
+        out = input
+        for i in range(num_layers):
+            out = self.layer_dict['gated_conv_{}'.format(i)](out)
+
+        out = self.layer_dict['fully_connected'](out)
+        out = self.layer_dict['sigmoid'](out)
+        return out
+
+    def reset_parameters(self):
+        """
+        Re-initializes the networks parameters
+        """
+        # Reset parameters for all layers except final sigmoid layer
+        for i, item in enumerate(self.layer_dict.children()):
+            print(item)
+            if i != len(self.layer_dict) - 1:
+                item.reset_parameters()
 
 class VQVAE(nn.Module):
     def __init__(self, input_shape, encoder_arch, vq_arch, generator_arch, num_speakers):
@@ -69,7 +181,7 @@ class VQVAE(nn.Module):
 
         # Straight-through z is passed to decoder, the other is used for computing embedding update
         z_st, z_emb = self.vq(z)
-        
+
         x_hat = self.generator(z_st, speaker)
 
         return x_hat, z, z_emb
