@@ -243,7 +243,7 @@ class ExperimentBuilder(nn.Module):
             print("\nEpoch {}:".format(epoch_idx), out_string, "epoch time", epoch_elapsed_time, "seconds")
             
             if torch.cuda.is_available():
-                print('CUDA max allocated memory: {}, max cached memory: {}.'.format(torch.cuda.max_memory_allocated(), torch.cuda.max_memory_cached))
+                print('CUDA max allocated memory: {}, max cached memory: {}.'.format(torch.cuda.max_memory_allocated(), torch.cuda.max_memory_cached()))
 
             self.state['current_epoch_idx'] = epoch_idx
             self.state['best_val_model_loss'] = self.best_val_model_loss
