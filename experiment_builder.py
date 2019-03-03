@@ -353,10 +353,10 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
-        loss_vq = F.mse_loss(z_emb, z_encoder.detach())
+        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
 
         # Commitment objective
-        loss_commit = F.mse_loss(z_encoder, z_emb.detach())
+        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
         loss_time = time.time() - loss_start_time
