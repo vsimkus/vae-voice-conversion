@@ -449,7 +449,7 @@ class GANExperimentBuilder(ExperimentBuilder):
     def run_evaluation_iter(self, x, y):
         self.eval()  # sets the system to validation mode
 
-                if type(x) is np.ndarray:
+        if type(x) is np.ndarray:
             x = torch.Tensor(x).float().to(device=self.device) # send data to device as torch tensors
             y = torch.Tensor(y).long().to(device=self.device)
 
