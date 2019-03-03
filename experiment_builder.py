@@ -157,7 +157,7 @@ class ExperimentBuilder(nn.Module):
         # This is loads a DataParallel model onto simple model, 
         # Creates a temporary DataParallel model to load the model and then restores to the unwrapped model.
         # TODO: This won't work if the model was saved without data parallel.
-        if not (torch.cuda.is_available() and self.device.type=='cuda'):
+        if not (torch.cuda.is_available()):
             # Temporarily save the unwrapped model
             unwrapped_model = self.model
 
@@ -241,7 +241,8 @@ class ExperimentBuilder(nn.Module):
             epoch_elapsed_time = time.time() - epoch_start_time  # calculate time taken for epoch
             epoch_elapsed_time = "{:.4f}".format(epoch_elapsed_time)
             print("\nEpoch {}:".format(epoch_idx), out_string, "epoch time", epoch_elapsed_time, "seconds")
-            if self.device.type == 'cuda':
+            
+            if torch.cuda.is_available():
                 print('CUDA max allocated memory: {}, max cached memory: {}.'.format(torch.cuda.max_memory_allocated(), torch.cuda.max_memory_cached))
 
             self.state['current_epoch_idx'] = epoch_idx
@@ -300,7 +301,7 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         y = y.to(device=self.device)
 
         forward_start_time = time.time()
-        x_out, z_emb, z_encoder = self.model.forward(x, y)
+        x_out, z_encoder, z_emb = self.model.forward(x, y)
         forward_time = time.time() - forward_start_time
 
         loss_start_time = time.time()
@@ -308,10 +309,10 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
-        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
+        loss_vq = F.mse_loss(z_emb, z_encoder.detach())
 
         # Commitment objective
-        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
+        loss_commit = F.mse_loss(z_encoder, z_emb.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
         loss_time = time.time() - loss_start_time
@@ -353,10 +354,10 @@ class VQVAEExperimentBuilder(ExperimentBuilder):
         loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # Vector quantization objective
-        loss_vq = F.mse_loss(z_encoder, z_emb.detach())
+        loss_vq = F.mse_loss(z_emb, z_encoder.detach())
 
         # Commitment objective
-        loss_commit = F.mse_loss(z_emb, z_encoder.detach())
+        loss_commit = F.mse_loss(z_encoder, z_emb.detach())
 
         total_loss = loss_recons + loss_vq + self.commit_coefficient * loss_commit
         loss_time = time.time() - loss_start_time
