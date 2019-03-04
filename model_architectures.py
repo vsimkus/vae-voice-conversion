@@ -264,7 +264,7 @@ class Encoder(nn.Module):
                         stride=1,
                         padding=0)
         self.layer_dict['latent_conv'] = latent_conv
-        self.layer_dict['latent_batch_norm'] = nn.BatchNorm1d(self.latent_dim)
+        # self.layer_dict['latent_batch_norm'] = nn.BatchNorm1d(self.latent_dim)
         
         x = latent_conv(x)
         print(x.shape)
@@ -276,7 +276,7 @@ class Encoder(nn.Module):
             # out = self.layer_dict['chomp_conv_{}'.format(i)](out)
         
         out = self.layer_dict['latent_conv'](out)
-        return self.layer_dict['latent_batch_norm'](out)
+        # return self.layer_dict['latent_batch_norm'](out)
     
     def reset_parameters(self):
         """
@@ -346,7 +346,7 @@ class Generator(nn.Module):
         x = pre_output_conv(x)
         print(x.shape)
 
-        pre_output_bn = nn.BatchNorm1d(self.pre_output_channels)
+        # pre_output_bn = nn.BatchNorm1d(self.pre_output_channels)
         self.layer_dict['pre_output_bn'] = pre_output_bn
         x = pre_output_bn(x)
         print(x.shape)
@@ -463,7 +463,7 @@ class GatedConv1d(nn.Module):
                         dilation=self.dilation,
                         padding=padding)
 
-        self.conv_bn = nn.BatchNorm1d(self.out_channels)
+        # self.conv_bn = nn.BatchNorm1d(self.out_channels)
 
         self.gate = nn.Conv1d(in_channels=self.in_channels,
                         out_channels=self.out_channels,
@@ -472,11 +472,13 @@ class GatedConv1d(nn.Module):
                         dilation=self.dilation,
                         padding=padding)
 
-        self.gate_bn = nn.BatchNorm1d(self.out_channels)
+        # self.gate_bn = nn.BatchNorm1d(self.out_channels)
     
     def forward(self, input):
-        conv_out = self.conv_bn(self.conv(input))
-        gate_out = self.gate_bn(self.gate(input))
+        # conv_out = self.conv_bn(self.conv(input))
+        # gate_out = self.gate_bn(self.gate(input))
+        conv_out = self.conv(input)
+        gate_out = self.gate(input)
         return torch.tanh(conv_out) * torch.sigmoid(gate_out)
     
     def reset_parameters(self):
@@ -484,9 +486,9 @@ class GatedConv1d(nn.Module):
         Re-initializes the networks parameters
         """
         self.conv.reset_parameters()
-        self.conv_bn.reset_parameters()
+        # self.conv_bn.reset_parameters()
         self.gate.reset_parameters()
-        self.gate_bn.reset_parameters()
+        # self.gate_bn.reset_parameters()
 
 class CondGatedTransposeConv1d(nn.Module):
     """
@@ -517,7 +519,7 @@ class CondGatedTransposeConv1d(nn.Module):
                         padding=self.padding,
                         output_padding=self.out_padding)
 
-        self.conv_bn = nn.BatchNorm1d(self.out_channels)
+        # self.conv_bn = nn.BatchNorm1d(self.out_channels)
         
         self.gate = nn.ConvTranspose1d(in_channels=self.in_channels, 
                         out_channels=self.out_channels,
@@ -527,18 +529,18 @@ class CondGatedTransposeConv1d(nn.Module):
                         padding=self.padding,
                         output_padding=self.out_padding)
 
-        self.gate_bn = nn.BatchNorm1d(self.out_channels)
+        # self.gate_bn = nn.BatchNorm1d(self.out_channels)
         
     def forward(self, input, speaker):
         cond_out = self.cond(speaker).unsqueeze(-1)
 
         conv_out = self.conv(input)
         conv_out = torch.add(conv_out, cond_out)
-        conv_out = self.conv_bn(conv_out)
+        # conv_out = self.conv_bn(conv_out)
 
         gate_out = self.gate(input)
         gate_out = torch.add(gate_out, cond_out)
-        gate_out = self.gate_bn(gate_out)
+        # gate_out = self.gate_bn(gate_out)
 
         return torch.tanh(conv_out) * torch.sigmoid(gate_out)
 
@@ -549,8 +551,8 @@ class CondGatedTransposeConv1d(nn.Module):
         self.cond.reset_parameters()
         self.conv.reset_parameters()
         self.gate.reset_parameters()
-        self.conv_bn.reset_parameters()
-        self.gate_bn.reset_parameters()
+        # self.conv_bn.reset_parameters()
+        # self.gate_bn.reset_parameters()
         
 
 
