@@ -204,7 +204,7 @@ class VQVAEQuantizedInput(VQVAE):
         self.d2a = Digital2Analog(num_input_quantization_channels)
     
     def forward(self, input, speaker):
-        analog_input = d2a(input)
+        analog_input = self.d2a(input)
         return self.forward(analog_input, speaker)
 
 class VAE(nn.Module):
@@ -472,7 +472,6 @@ class GatedConv1d(nn.Module):
         self.gate_bn = nn.BatchNorm1d(self.out_channels)
     
     def forward(self, input):
-        print(input)
         conv_out = self.conv_bn(self.conv(input))
         gate_out = self.gate_bn(self.gate(input))
         return torch.tanh(conv_out) * torch.sigmoid(gate_out)
@@ -571,7 +570,7 @@ class Digital2Analog(nn.Module):
         # The dictionary is non-trainable.
         self.input_embeddings.weight.requires_grad = False
     
-    def forward(input):
+    def forward(self, input):
         return self.input_embeddings(input).squeeze(-1)
 
 class Chomp1d(nn.Module):
