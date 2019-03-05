@@ -205,7 +205,7 @@ class VQVAEQuantizedInput(VQVAE):
     
     def forward(self, input, speaker):
         analog_input = self.d2a(input)
-        return self.forward(analog_input, speaker)
+        return super(VQVAEQuantizedInput, self).forward(analog_input, speaker)
 
 class VAE(nn.Module):
     def __init__(self):
