@@ -8,8 +8,8 @@
     "comment_commit_coefficient": "Should be in the range 0.1-2.0.",
     "learning_rate": 1e-1,
     "weight_decay_coefficient": 1e-6,
+    "num_input_quantization_channels": 256,
     "encoder": {
-        "num_input_quantization_channels": 256,
         "kernel_sizes": [7, 7, 7, 7],
         "dilations": [1, 2, 4, 16],
         "strides": [3, 3, 3, 3],
@@ -31,6 +31,7 @@
         "num_residual_channels": [64, 64, 32, 32, 32],
         "pre_output_channels": 64,
         "comment_pre_output_channels": "TODO: decide on all the channel dimensionalities.",
+        "num_final_output_channels": 256,
         "speaker_dim": 64
     }
 }

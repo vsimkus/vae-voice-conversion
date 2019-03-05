@@ -130,7 +130,7 @@ class Discriminator(nn.Module):
             print(item)
             if i != len(self.layer_dict) - 1:
                 item.reset_parameters()
-
+    
 class VQVAE(nn.Module):
     def __init__(self, input_shape, encoder_arch, vq_arch, generator_arch, num_speakers):
         super(VQVAE, self).__init__()
@@ -145,9 +145,8 @@ class VQVAE(nn.Module):
     def build_module(self):
         print('Building VQVAE.')
 
-        x = torch.zeros((self.input_shape), dtype=torch.long)
+        x = torch.zeros((self.input_shape))
         self.encoder = Encoder(input_shape=self.input_shape, 
-                            num_input_quantization_channels=self.encoder_arch.num_input_quantization_channels,
                             kernel_sizes=self.encoder_arch.kernel_sizes,
                             strides=self.encoder_arch.strides,
                             num_residual_channels=self.encoder_arch.num_residual_channels,
@@ -170,7 +169,7 @@ class VQVAE(nn.Module):
                                 out_paddings=self.generator_arch.out_paddings,
                                 num_residual_channels=self.generator_arch.num_residual_channels,
                                 pre_output_channels=self.generator_arch.pre_output_channels, 
-                                num_output_quantization_channels=self.encoder_arch.num_input_quantization_channels)
+                                num_final_output_channels=self.generator_arch.num_final_output_channels)
 
         y = torch.zeros((self.input_shape[0]), dtype=torch.long)
 
@@ -195,6 +194,18 @@ class VQVAE(nn.Module):
         self.vq.reset_parameters()
         self.generator.reset_parameters()
 
+class VQVAEQuantizedInput(VQVAE):
+    """
+    VQVAE with input quantization, so we can use CrossEntropy loss.
+    """
+    def __init__(self, input_shape, encoder_arch, vq_arch, generator_arch, num_speakers, num_input_quantization_channels):
+        super(VQVAEQuantizedInput, self).__init__(input_shape, encoder_arch, vq_arch, generator_arch, num_speakers)
+
+        self.d2a = Digital2Analog(num_input_quantization_channels)
+    
+    def forward(self, input, speaker):
+        analog_input = d2a(input)
+        return self.forward(analog_input, speaker)
 
 class VAE(nn.Module):
     def __init__(self):
@@ -206,31 +217,17 @@ class Encoder(nn.Module):
     """
     Downsampling encoder with strided convolutions.
     """
-    def __init__(self, input_shape, num_input_quantization_channels, kernel_sizes, strides, num_residual_channels, latent_dim):
+    def __init__(self, input_shape, kernel_sizes, strides, num_residual_channels, latent_dim):
         super(Encoder, self).__init__()
         self.input_shape = input_shape
-        self.num_input_quantization_channels = num_input_quantization_channels
         self.kernel_sizes = kernel_sizes
         self.strides = strides
         self.num_residual_channels = num_residual_channels
         self.latent_dim = latent_dim
 
-        # Dictionary for digital to analog conversion
-        self.init_input_embeddings()
-
         self.layer_dict = nn.ModuleDict()
         self.build_module()
-    
-    def init_input_embeddings(self):
-        self.input_embeddings = nn.Embedding(self.num_input_quantization_channels, 1)
 
-        indices = torch.arange(self.num_input_quantization_channels)
-        # Initialize values from -1 to +1 sequentially.
-        analog_values = torch.arange(start=-1, end=1, step=1/(self.num_input_quantization_channels/2), requires_grad=False)
-
-        self.input_embeddings.weight.data.put_(indices, analog_values)
-        # The dictionary is non-trainable.
-        self.input_embeddings.weight.requires_grad = False
     
     def build_module(self):
         num_layers = len(self.kernel_sizes)
@@ -270,7 +267,7 @@ class Encoder(nn.Module):
         print(x.shape)
     
     def forward(self, input):
-        out = self.input_embeddings(input).squeeze(-1)
+        out = input
         for i in range(len(self.kernel_sizes)):
             out = self.layer_dict['gated_conv_{}'.format(i)](out)
             # out = self.layer_dict['chomp_conv_{}'.format(i)](out)
@@ -293,7 +290,7 @@ class Generator(nn.Module):
     def __init__(self, input_shape, num_speakers, 
                 speaker_dim, kernel_sizes, strides, dilations, 
                 paddings, out_paddings, num_residual_channels, 
-                pre_output_channels, num_output_quantization_channels):
+                pre_output_channels, num_final_output_channels):
         super(Generator, self).__init__()
         self.input_shape = input_shape
         self.kernel_sizes = kernel_sizes
@@ -303,7 +300,7 @@ class Generator(nn.Module):
         self.out_paddings = out_paddings
         self.num_residual_channels = num_residual_channels
         self.pre_output_channels = pre_output_channels
-        self.num_output_quantization_channels = num_output_quantization_channels
+        self.num_final_output_channels = num_final_output_channels
         self.num_speakers = num_speakers
         self.speaker_dim = speaker_dim
 
@@ -352,7 +349,7 @@ class Generator(nn.Module):
         print(x.shape)
 
         logit_conv = nn.Conv1d(in_channels=x.shape[1],
-                        out_channels=self.num_output_quantization_channels,
+                        out_channels=self.num_final_output_channels,
                         kernel_size=1,
                         stride=1,
                         padding=0)
@@ -475,6 +472,7 @@ class GatedConv1d(nn.Module):
         self.gate_bn = nn.BatchNorm1d(self.out_channels)
     
     def forward(self, input):
+        print(input)
         conv_out = self.conv_bn(self.conv(input))
         gate_out = self.gate_bn(self.gate(input))
         return torch.tanh(conv_out) * torch.sigmoid(gate_out)
@@ -552,7 +550,29 @@ class CondGatedTransposeConv1d(nn.Module):
         self.conv_bn.reset_parameters()
         self.gate_bn.reset_parameters()
         
+class Digital2Analog(nn.Module):
+    """
+    Converts digital (mu-law encoded) input to continuous input from -1 to 1
+    """
+    def __init__(self, num_input_quantization_channels):
+        super(Digital2Analog, self).__init__()
+        self.num_input_quantization_channels = num_input_quantization_channels
+        # Dictionary for digital to analog conversion
+        self.init_input_embeddings()
 
+    def init_input_embeddings(self):
+        self.input_embeddings = nn.Embedding(self.num_input_quantization_channels, 1)
+
+        indices = torch.arange(self.num_input_quantization_channels)
+        # Initialize values from -1 to +1 sequentially.
+        analog_values = torch.arange(start=-1, end=1, step=1/(self.num_input_quantization_channels/2), requires_grad=False)
+
+        self.input_embeddings.weight.data.put_(indices, analog_values)
+        # The dictionary is non-trainable.
+        self.input_embeddings.weight.requires_grad = False
+    
+    def forward(input):
+        return self.input_embeddings(input).squeeze(-1)
 
 class Chomp1d(nn.Module):
     """

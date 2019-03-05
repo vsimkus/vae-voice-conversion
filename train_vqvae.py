@@ -7,7 +7,7 @@ rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 import torch
 import torchaudio_transforms as transforms
 from experiment_builder import VQVAEExperimentBuilder
-from model_architectures import VQVAE
+from model_architectures import VQVAEQuantizedInput
 from vctk_dataset import VCTKDataset
 from samplers import ChunkEfficientRandomSampler
 
@@ -17,7 +17,7 @@ torch.manual_seed(seed=args.seed) # sets pytorch's seed
 dataset_path = args.dataset_root_path
 dataset = VCTKDataset(root=dataset_path, transform=transforms.Compose([
     transforms.PadTrim(max_len=args.input_max_len),
-    transforms.MuLawEncoding(quantization_channels=args.encoder.num_input_quantization_channels)
+    transforms.MuLawEncoding(quantization_channels=args.num_input_quantization_channels)
 ]))
 
 if args.tuning_mode:
@@ -51,12 +51,13 @@ val_data = torch.utils.data.DataLoader(val_dataset,
                                         )
 test_data = val_data
 
-vqvae_model = VQVAE(
+vqvae_model = VQVAEQuantizedInput(
     input_shape=(1, 1, args.input_max_len),
     encoder_arch=args.encoder,
     vq_arch=args.vq,
     generator_arch=args.generator,
-    num_speakers=109)
+    num_speakers=109,
+    num_input_quantization_channels=args.num_input_quantization_channels)
 
 vqvae_experiment = VQVAEExperimentBuilder(network_model=vqvae_model,
                                     experiment_name=args.experiment_name,

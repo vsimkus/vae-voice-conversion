@@ -23,6 +23,7 @@
         "out_paddings": [0, 0, 0, 0, 0, 0, 0], 
         "comment_out_paddings": "output = (input - 1)*stride - 2*padding + kernel + output_padding",
         "num_residual_channels": [128, 128, 128, 64, 32, 16, 1],
-        "speaker_dim": 64
+        "speaker_dim": 64,
+        "num_final_output_channels": 1
     }
 }
