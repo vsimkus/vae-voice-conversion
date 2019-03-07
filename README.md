@@ -21,3 +21,4 @@ given a data provider, an experiment builder instance and a model architecture
 * [torchaudio](https://github.com/pytorch/audio)
     * [libsox v14.3.2 or later](https://anaconda.org/conda-forge/sox)
     * GCC v4.9 or later
+    * Remove the following silent samples before running preprocessing, `p323_424`, `p306_151`, `p351_361`, `p345_292`, `p341_101` 
