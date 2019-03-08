@@ -421,7 +421,7 @@ class VAEExperimentBuilder(ExperimentBuilder):
         loss_start_time = time.time()
         # Reconstruction loss
         #out = x_out.float()
-        loss_recons = F.mse_loss(x_out, x.squeeze(1)) # TODO check whether to use sum instead
+        loss_recons = F.mse_loss(x_out, x.squeeze(1), reduction='sum') # TODO check whether to use sum
 
         # KL objective
         loss_kl = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -464,7 +464,7 @@ class VAEExperimentBuilder(ExperimentBuilder):
 
         loss_start_time = time.time()
         # Reconstruction loss
-        loss_recons = F.mse_loss(x_out, x.squeeze(1))
+        loss_recons = F.mse_loss(x_out, x.squeeze(1), reduction='sum') # TODO check whether to use sum
 
         # KL objective
         loss_kl = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
