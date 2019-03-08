@@ -1,6 +1,6 @@
 {
     "seed": 154367,
-    "experiment_name": "vae_lr1e-2_recon_test",
+    "experiment_name": "vae_lr1e-2",
     "batch_size": 24,
     "num_epochs": 200,
     "input_max_len": 20000,
