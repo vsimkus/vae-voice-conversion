@@ -469,7 +469,7 @@ class VAEExperimentBuilder(ExperimentBuilder):
         # KL objective
         loss_kl = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
 
-        # TODO maybe add hyperparameter for weight to kl term
+        # TODO check that loss is weighted correctly - maybe add hyperparameter for weight to kl term
         total_loss = loss_recons + loss_kl
         loss_time = time.time() - loss_start_time
 
