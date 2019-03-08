@@ -421,7 +421,7 @@ class VAEExperimentBuilder(ExperimentBuilder):
         loss_start_time = time.time()
         # Reconstruction loss
         #out = x_out.float()
-        loss_recons = F.mse_loss(x_out, x.squeeze(1))
+        loss_recons = F.mse_loss(x_out, x.squeeze(1)) # TODO check whether to use sum instead
 
         # KL objective
         loss_kl = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -498,7 +498,7 @@ class VAEExperimentBuilder(ExperimentBuilder):
 
         x_out, _, _ = self.model.forward(x, y)  # forward the data in the model
 
-        return torch.argmax(x_out.data, 1)
+        return x_out.data
 
 class GANExperimentBuilder(ExperimentBuilder):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
