@@ -39,7 +39,7 @@ export DATASET_DIR=${TMP}/data/
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
 
-config_file='vae_lr1e-1.json'
+config_file='vae_lr1e-2.json'
 echo "Starting train_vqvae.py on ${config_file}"
 # export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
 python train_vqvae.py \
