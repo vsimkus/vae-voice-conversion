@@ -4,16 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functions import QuantizeVector
 
-
-class VQVAEGAN(nn.Module):
-    def __init__(self):
-        raise NotImplementedError
-
-class VAEGAN(nn.Module):
-    def __init__(self):
-        super(VAEGAN, self).__init__()
-        raise NotImplementedError
-
 class GAN(nn.Module):
     def __init__(self, input_shape, discriminator_arch, generator_arch, num_speakers):
         super(GAN, self).__init__()
