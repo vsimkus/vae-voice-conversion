@@ -1,10 +1,10 @@
 #!/bin/sh
 #SBATCH -N 1	  # nodes requested
 #SBATCH -n 1	  # tasks requested
-#SBATCH --partition=Standard
-#SBATCH --gres=gpu:6
+#SBATCH --partition=Interactive
+#SBATCH --gres=gpu:2
 #SBATCH --mem=12000  # memory in Mb
-#SBATCH --time=0-08:00:00
+#SBATCH --time=0-02:00:00
 
 export CUDA_HOME=/opt/cuda-9.0.176.1/
 
@@ -28,22 +28,32 @@ mkdir -p /disk/scratch/${TEAM_ID}
 export TMPDIR=/disk/scratch/${TEAM_ID}/
 export TMP=/disk/scratch/${TEAM_ID}
 
-mkdir -p ${TMP}/data/
+mkdir -p ${TMP}/data_final/
 
-rsync -ua --progress /home/${STUDENT_ID}/data/vctk.zip ${TMP}/data/
-unzip -uo ${TMP}/data/vctk.zip -d ${TMP}/data
+# Sync VCC2016 WORLD dataset
+rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016.zip ${TMP}/data_final/
+unzip -uo ${TMP}/data_final/vcc2016.zip -d ${TMP}/data_final
+rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016_eval.zip ${TMP}/data_final/
+unzip -uo ${TMP}/data_final/vcc2016_eval.zip -d ${TMP}/data_final
 
-export DATASET_DIR=${TMP}/data/
+# Sync VCC2016 Raw dataset
+rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016_raw.zip ${TMP}/data_final/
+unzip -uo ${TMP}/data_final/vcc2016_raw.zip -d ${TMP}/data_final
+rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016_raw_eval.zip ${TMP}/data_final/
+unzip -uo ${TMP}/data_final/vcc2016_raw_eval.zip -d ${TMP}/data_final
+
+export DATASET_DIR=${TMP}/data_final/
 
 # Activate the relevant virtual environment:
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
 
-config_file='vqvae_lr1e-4.json'
+config_file='vqvae_vcc_world.json'
 echo "Starting train_vqvae.py on ${config_file}"
 # export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
 python train_vqvae.py \
                 --use_gpu=True \
-                --gpu_id='0,1,2,3,4,5' \
+                --gpu_id='0,1' \
                 --filepath_to_arguments_json_file="experiment_configs/${config_file}" \
-                --dataset_root_path=${DATASET_DIR} 
+                --dataset_root_path=${DATASET_DIR} \
+                --print_timings=True
