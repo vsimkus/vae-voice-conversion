@@ -9,7 +9,7 @@ import time
 import sys
 from collections import defaultdict
 
-from storage_utils import save_statistics
+from util.storage_utils import save_statistics
 
 class ExperimentBuilder(nn.Module):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,

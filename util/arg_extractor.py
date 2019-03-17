@@ -44,6 +44,7 @@ def get_args():
     parser.add_argument('--eval_audio_path', nargs='?', type=str, help='[Evaluation] Path to audio file for producing reconstruction.')
     parser.add_argument('--eval_out_path', nargs='?', type=str, help='[Evaluation] Path to output file for producing reconstruction.')
     parser.add_argument('--eval_speaker_id', nargs='?', type=int, help='[Evaluation] Speaker id for speaker conversion.')
+    parser.add_argument('--dataset', type=str, default='VCCWORLD2016', help='VCCWORLD2016, VCCRaw2016 or VCTK')
 
     args = parser.parse_args()
     gpu_id = str(args.gpu_id)

@@ -4,7 +4,7 @@
     "experiment_name": "vqvae_vcc_raw",
     "use_gated_convolutions": false,
     "num_input_quantization_channels":256,
-    "batch_size": 1,
+    "batch_size": 32,
     "num_epochs": 200,
     "input_len": 8192,
     "commit_coefficient": 0.5,

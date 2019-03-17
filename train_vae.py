@@ -1,18 +1,18 @@
 import numpy as np
-from arg_extractor import get_args
+from util.arg_extractor import get_args
 
 args, device = get_args()  # get arguments from command line
 rng = np.random.RandomState(seed=args.seed)  # set the seeds for the experiment
 
 import torch
-import torchaudio_transforms as transforms
+import util.torchaudio_transforms as transforms
 from experiment_builders.vae_builder import VAEWORLDExperimentBuilder
 from experiment_builders.vae_builder import VAERawExperimentBuilder
 from models.vae import VAE
 from models.common_networks import QuantisedInputModuleWrapper
 from datasets.vcc_world_dataset import VCCWORLDDataset
 from datasets.vcc_raw_dataset import VCCRawDataset
-from samplers import ChunkEfficientRandomSampler
+from util.samplers import ChunkEfficientRandomSampler
 
 torch.manual_seed(seed=args.seed)
 
