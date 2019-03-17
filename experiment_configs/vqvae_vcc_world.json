@@ -6,7 +6,7 @@
     "batch_size": 512,
     "num_epochs": 200,
     "input_len": 513,
-    "commit_coefficient": 0.5,
+    "commit_coefficient": 1.0,
     "comment_commit_coefficient": "Should be in the range 0.1-2.0.",
     "learning_rate": 1e-2,
     "weight_decay_coefficient": 1e-6,

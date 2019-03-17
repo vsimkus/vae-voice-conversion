@@ -159,8 +159,7 @@ class ExperimentBuilder(nn.Module):
 
         # This is loads a DataParallel model onto simple model, 
         # Creates a temporary DataParallel model to load the model and then restores to the unwrapped model.
-        # TODO: This won't work if the model was saved without data parallel.
-        if not (torch.cuda.is_available()):
+        if not torch.cuda.is_available() and list(state['network'].keys())[0].startswith('model.module'):
             # Temporarily save the unwrapped model
             unwrapped_model = self.model
 
