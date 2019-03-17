@@ -13,7 +13,7 @@
         "kernel_sizes": [7, 5, 7, 5, 7, 5],
         "dilations": [1, 1, 1, 1, 1, 1],
         "strides": [3, 1, 3, 1, 3, 1],
-        "num_output_channels": [32, 32, 64, 64, 128, 128],
+        "num_output_channels": [32, 32, 64, 64, 128, 64],
         "paddings": [3, 2, 3, 2, 3, 2],
         "paddings_comment": "same padding"
     },

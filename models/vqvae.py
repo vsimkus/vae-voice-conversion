@@ -56,8 +56,8 @@ class VQVAE(nn.Module):
         y = torch.zeros((self.input_shape[0]), dtype=torch.long)
         y = self.speaker_dict(y)
 
-        self.speaker_dense = nn.Linear(in_features=y.shape[1], out_features=self.vq_arch.latent_dim)
-        y = self.speaker_dense(y).unsqueeze(-1)
+        self.speaker_dense = nn.Linear(in_features=y.shape[1], out_features=x_st.shape[1]*x_st.shape[2])
+        y = self.speaker_dense(y).view(-1, x_st.shape[1], x_st.shape[2])
         print('speaker_out shape: {}'.format(y.shape))
 
         # Add speaker embeddings
@@ -92,7 +92,7 @@ class VQVAE(nn.Module):
 
         # Create and add speaker embeddings
         speaker = self.speaker_dict(speaker)
-        speaker = self.speaker_dense(speaker).unsqueeze(-1)
+        speaker = self.speaker_dense(speaker).view(-1, z_st.shape[1], z_st.shape[2])
         z_st = z_st + speaker
 
         x_hat = self.generator(z_st)
