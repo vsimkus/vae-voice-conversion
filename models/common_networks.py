@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.common_layers import LayerNormalizedGatedConv1d, LayerNormalizedLReLUConv1d, LayerNormalizedGatedTransposeConv1d, LayerNormalizedLReLUTransposeConv1d
+from models.common_layers import LayerNormalizedGatedConv1d, LayerNormalizedLReLUConv1d, LayerNormalizedGatedTransposeConv1d, LayerNormalizedLReLUTransposeConv1d, Digital2Analog
 
 class Encoder(nn.Module):
     """
@@ -138,3 +138,20 @@ class Generator(nn.Module):
             item.reset_parameters()
         
         self.final_conv.reset_parameters()
+
+class QuantisedInputModuleWrapper(nn.Module):
+    """
+    Wrapper for any module that should take quantised (mu-law encoded) inputs
+    """
+    def __init__(self, num_input_quantization_channels, model):
+        super(QuantisedInputModuleWrapper, self).__init__()
+        print('Building Quantised input module.')
+        self.d2a = Digital2Analog(num_input_quantization_channels)
+        self.model = model
+    
+    def forward(self, digital_input, speaker):
+        analog_input = self.d2a(digital_input)
+        return self.model(analog_input, speaker)
+    
+    def reset_parameters(self):
+        pass
