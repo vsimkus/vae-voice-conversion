@@ -41,7 +41,7 @@ if args.dataset == 'VCCWORLD2016':
         val_dataset,
         batch_size=args.batch_size,
         num_workers=1,
-        sampler=ChunkEfficientRandomSampler(val_dataset, train_dataset.chunk_indices))
+        sampler=ChunkEfficientRandomSampler(val_dataset, val_dataset.chunk_indices))
     
     vqvae_experiment = VQVAEWORLDExperimentBuilder(network_model=vqvae_model,
                                         experiment_name=args.experiment_name,
