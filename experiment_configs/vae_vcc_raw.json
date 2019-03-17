@@ -7,7 +7,7 @@
     "batch_size": 32,
     "num_epochs": 200,
     "input_len": 8192,
-    "learning_rate": 1e-3,
+    "learning_rate": 1e-4,
     "weight_decay_coefficient": 1e-6,
     "encoder": {
         "kernel_sizes": [7, 5, 7, 5, 7, 5],
@@ -17,7 +17,7 @@
         "paddings": [3, 2, 3, 2, 3, 2],
         "paddings_comment": "same padding"
     },
-    "latent_dim": 64,
+    "latent_dim": 256,
     "speaker_dim": 64,
     "num_speakers": 10,
     "generator": {
