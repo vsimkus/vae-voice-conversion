@@ -18,23 +18,19 @@ if args.dataset == 'VCCWORLD2016':
 
     dataset_path = args.dataset_root_path
     train_dataset = VCCWORLDDataset(root=dataset_path, scale=True)
-    chunk_size = train_dataset.chunk_size # This is the number of samples in a chunkfile
     val_dataset = VCCWORLDDataset(root=dataset_path, scale=True, eval=True)
-    val_chunk_size = val_dataset.chunk_size # This is the number of samples in a chunkfile
 
     # Create data loaders
-    train_data = torch.utils.data.DataLoader(train_dataset,
-                                            batch_size=args.batch_size,
-                                            num_workers=1,
-                                            sampler=ChunkEfficientRandomSampler(train_dataset,
-                                                                                chunk_size)
-                                            )
-    val_data = torch.utils.data.DataLoader(val_dataset,
-                                            batch_size=args.batch_size,
-                                            num_workers=1,
-                                            sampler=ChunkEfficientRandomSampler(val_dataset,
-                                                                                val_chunk_size)
-                                            )
+    train_data = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        num_workers=1,
+        sampler=ChunkEfficientRandomSampler(train_dataset, train_dataset.chunk_indices))
+    val_data = torch.utils.data.DataLoader(
+        val_dataset,
+        batch_size=args.batch_size,
+        num_workers=1,
+        sampler=ChunkEfficientRandomSampler(val_dataset, train_dataset.chunk_indices))
 else:
     raise Exception('No such dataset!')
 

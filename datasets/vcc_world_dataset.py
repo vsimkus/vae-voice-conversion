@@ -36,6 +36,7 @@ class VCCWORLDDataset(data.Dataset):
             raise RuntimeError('Dataset not found.')
 
         self._read_info()
+        self.current_chunk_idx = self.chunk_indices[self.cached_pt]
         self.spectra_scale = self.spectra_max - self.spectra_min
 
         self.spectra, self.labels = torch.load(os.path.join(
@@ -51,14 +52,20 @@ class VCCWORLDDataset(data.Dataset):
         Returns:
             tuple: (spectra, aperiodicity, f0, energy, speaker) where speaker is index of the target speaker id.
         """
-        if self.cached_pt != index // self.chunk_size:
-            self.cached_pt = int(index // self.chunk_size)
+        if index < self.current_chunk_idx[0] or index > self.current_chunk_idx[1]:
+            for chunk, chunk_indices in self.chunk_indices.items():
+                if index >= chunk_indices[0] and index <= chunk_indices[1]:
+                    self.cached_pt = chunk
+                    self.current_chunk_idx = chunk_indices
+                    break
+
             self.spectra, self.labels = torch.load(os.path.join(
                 self.root, self.processed_folder, "vcc2016_WORLD_train_{:04d}.pt".format(self.cached_pt)))
             if self.load_conversion_data:
                 self.aperiodicity, self.f0, self.energy, _ = torch.load(os.path.join(
                     self.root, self.processed_folder, "vcc2016_WORLD_conv_{:04d}.pt".format(self.cached_pt)))
-        index = index % self.chunk_size
+
+        index = index - self.current_chunk_idx[0]
         spectra = self.spectra[index]
         aperiodicity = self.aperiodicity[index]
         f0 = self.f0[index]
@@ -77,12 +84,17 @@ class VCCWORLDDataset(data.Dataset):
         Returns:
             tuple: (spectra, speaker) where speaker is index of the target speaker id.
         """
-        if self.cached_pt != index // self.chunk_size:
-            self.cached_pt = int(index // self.chunk_size)
-            self.spectra, self.labels = torch.load(os.path.join(
-            self.root, self.processed_folder, "vcc2016_WORLD_train_{:04d}.pt".format(self.cached_pt)))
+        if index < self.current_chunk_idx[0] or index > self.current_chunk_idx[1]:
+            for chunk, chunk_indices in self.chunk_indices.items():
+                if index >= chunk_indices[0] and index <= chunk_indices[1]:
+                    self.cached_pt = chunk
+                    self.current_chunk_idx = chunk_indices
+                    break
 
-        index = index % self.chunk_size
+            self.spectra, self.labels = torch.load(os.path.join(
+                self.root, self.processed_folder, "vcc2016_WORLD_train_{:04d}.pt".format(self.cached_pt)))
+
+        index = index - self.current_chunk_idx[0]
         spectra = self.spectra[index]
         speaker = self.labels[index]
 
@@ -126,9 +138,9 @@ class VCCWORLDDataset(data.Dataset):
         info_path = os.path.join(
             self.root, self.processed_folder, "vcc2016_info.txt")
         with open(info_path, "r") as f:
-            self.chunk_size = int(f.readline().split(",")[1])
             self.num_samples = int(f.readline().split(",")[1])
             self.ids = ast.literal_eval(f.readline().split(",", 1)[1])
+            self.chunk_indices = ast.literal_eval(f.readline().split(",", 1)[1])
             self.speaker_offset_idx = ast.literal_eval(f.readline().split(",", 1)[1])
             self.speaker_mu = ast.literal_eval(f.readline().split(",", 1)[1])
             self.speaker_std = ast.literal_eval(f.readline().split(",", 1)[1])
