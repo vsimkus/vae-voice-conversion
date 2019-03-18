@@ -223,3 +223,7 @@ class Digital2Analog(nn.Module):
 
     def forward(self, input):
         return self.input_embeddings(input).squeeze(-1)
+    
+    def reset_parameters(self):
+        # Nothing to reset here.
+        pass

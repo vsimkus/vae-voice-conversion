@@ -154,4 +154,5 @@ class QuantisedInputModuleWrapper(nn.Module):
         return self.model(analog_input, speaker)
     
     def reset_parameters(self):
-        pass
+        self.d2a.reset_parameters()
+        self.model.reset_parameters()

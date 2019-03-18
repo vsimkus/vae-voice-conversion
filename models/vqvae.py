@@ -49,7 +49,7 @@ class VQVAE(nn.Module):
         self.vq = VectorQuantizer(embedding_dim=self.vq_arch.latent_dim,
                                 num_embeddings=self.vq_arch.num_latent)
 
-        x_st, x = self.vq(x)
+        x_st, x_emb = self.vq(x)
         print('VQ latent shape: {}'.format(x_st.shape))
 
         # Create speaker embeddings
@@ -61,10 +61,10 @@ class VQVAE(nn.Module):
         print('speaker_out shape: {}'.format(y.shape))
 
         # Add speaker embeddings
-        x = x + y
+        x_st = x_st + y
 
         if self.use_gated_convolutions:
-            self.generator = Generator(input_shape=x.shape,
+            self.generator = Generator(input_shape=x_st.shape,
                                     kernel_sizes=self.generator_arch.kernel_sizes,
                                     strides=self.generator_arch.strides,
                                     dilations=self.generator_arch.dilations,
@@ -73,7 +73,7 @@ class VQVAE(nn.Module):
                                     num_output_channels=self.generator_arch.num_output_channels,
                                     convolution_layer=LayerNormalizedGatedTransposeConv1d)
         else:
-            self.generator = Generator(input_shape=x.shape,
+            self.generator = Generator(input_shape=x_st.shape,
                                     kernel_sizes=self.generator_arch.kernel_sizes,
                                     strides=self.generator_arch.strides,
                                     dilations=self.generator_arch.dilations,

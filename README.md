@@ -4,7 +4,6 @@
 ## Overview of code: TODO: Update
 - [arg_extractor.py](arg_extractor.py): Contains an array of utility methods that can parse python arguments or convert
  a json config file into an argument NamedTuple.
-- [data_providers.py](data_providers.py): A sample data provider, of the same type used in the MLPractical course.
 - [experiment_builder.py](experiment_builder.py): Builds and executes a simple image classification experiment, keeping track
 of relevant statistics, taking care of storing and re-loading pytorch models, as well as choosing the best validation-performing model to evaluate the test set on.
 - [model_architectures.py](model_architectures.py): Provides a fully connected network and convolutional neural network 
@@ -16,9 +15,16 @@ given a data provider, an experiment builder instance and a model architecture
 # Dependencies
 * PyTorch v1.0.0 or later
 * numpy
+* pillow
+* tqdm
 
-# For preprocessing of VCTK dataset
+## For extracting WORLD features:
+* [pyworld](https://github.com/JeremyCCHsu/Python-Wrapper-for-World-Vocoder)
+
+## For preprocessing raw audio features
 * [torchaudio](https://github.com/pytorch/audio)
     * [libsox v14.3.2 or later](https://anaconda.org/conda-forge/sox)
     * GCC v4.9 or later
-    * Remove the following silent samples before running preprocessing, `p323_424`, `p306_151`, `p351_361`, `p345_292`, `p341_101` 
+
+# VCTK dataset ammendments
+    * Removed the following silent samples before running preprocessing, `p323_424`, `p306_151`, `p351_361`, `p345_292`, `p341_101`, `p306_352`. 
