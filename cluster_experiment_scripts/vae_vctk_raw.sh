@@ -28,21 +28,13 @@ mkdir -p /disk/scratch/${TEAM_ID}
 export TMPDIR=/disk/scratch/${TEAM_ID}/
 export TMP=/disk/scratch/${TEAM_ID}
 
-mkdir -p ${TMP}/data_final/
+mkdir -p ${TMP}/data_small_samples/
 
-# Sync VCC2016 WORLD dataset
-rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016.zip ${TMP}/data_final/
-unzip -uo ${TMP}/data_final/vcc2016.zip -d ${TMP}/data_final
-rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016_eval.zip ${TMP}/data_final/
-unzip -uo ${TMP}/data_final/vcc2016_eval.zip -d ${TMP}/data_final
+# Sync VCTKRaw dataset
+rsync -ua --progress /home/${STUDENT_ID}/data/vctk_small_samples.zip ${TMP}/data_small_samples/
+unzip -uo ${TMP}/data_small_samples/vctk_small_samples.zip -d ${TMP}/data_small_samples
 
-# Sync VCC2016 Raw dataset
-rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016_raw.zip ${TMP}/data_final/
-unzip -uo ${TMP}/data_final/vcc2016_raw.zip -d ${TMP}/data_final
-rsync -ua --progress /home/${STUDENT_ID}/data_final/vcc2016_raw_eval.zip ${TMP}/data_final/
-unzip -uo ${TMP}/data_final/vcc2016_raw_eval.zip -d ${TMP}/data_final
-
-export DATASET_DIR=${TMP}/data_final/
+export DATASET_DIR=${TMP}/data_small_samples/
 
 # Activate the relevant virtual environment:
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
