@@ -22,13 +22,13 @@ class VCTKDataset(data.Dataset):
     zip_path = 'VCTK-Corpus.zip'  # path to local zip file
     dset_path = 'VCTK-Corpus'
 
-    def __init__(self, root, transform=None, target_transform=None):
+    def __init__(self, root, transform=None, target_transform=None, chunk_size=10000):
         self.root = os.path.expanduser(root)
         self.transform = transform
         self.target_transform = target_transform
         self.data = []
         self.labels = []
-        self.chunk_size = 1500
+        self.chunk_size = chunk_size
         self.num_samples = 0
         self.max_len = 0
         self.mean_len = 0.
