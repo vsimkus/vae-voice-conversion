@@ -105,7 +105,7 @@ elif args.dataset == 'VCTKRaw':
     ]))
     
     num_chunks = math.ceil(len(dataset) / chunk_size)
-    chunk_indices = {i:(i*chunk_size, (i+1)*chunk_size) \
+    chunk_indices = {i:(i*chunk_size, (i+1)*chunk_size-1) \
                         if i < num_chunks-1 \
                         else (i*chunk_size, len(dataset)) \
                         for i in range(num_chunks) }
@@ -115,13 +115,13 @@ elif args.dataset == 'VCTKRaw':
     val_chunk_indices = {key:value  for key, value in chunk_indices.items() if key >= num_chunks-2}
 
     train_dataset = torch.utils.data.Subset(dataset, range(min(train_chunk_indices.items(), key=operator.itemgetter(0))[1][0], 
-                                                            max(train_chunk_indices.items(), key=operator.itemgetter(0))[1][1]))
+                                                            max(train_chunk_indices.items(), key=operator.itemgetter(0))[1][1]+1))
     val_dataset = torch.utils.data.Subset(dataset, range(min(val_chunk_indices.items(), key=operator.itemgetter(0))[1][0], 
-                                                            max(val_chunk_indices.items(), key=operator.itemgetter(0))[1][1]))
+                                                            max(val_chunk_indices.items(), key=operator.itemgetter(0))[1][1]+1))
 
     # Re-compute chunk indices for the validation subset
     val_num_chunks = math.ceil(len(val_dataset) / chunk_size)
-    val_chunk_indices = {i:(i*chunk_size, (i+1)*chunk_size) \
+    val_chunk_indices = {i:(i*chunk_size, (i+1)*chunk_size-1) \
                         if i < val_num_chunks-1 \
                         else (i*chunk_size, len(val_dataset)) \
                         for i in range(val_num_chunks) }

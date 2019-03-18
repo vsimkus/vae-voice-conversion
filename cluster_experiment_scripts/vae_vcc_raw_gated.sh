@@ -2,7 +2,7 @@
 #SBATCH -N 1	  # nodes requested
 #SBATCH -n 1	  # tasks requested
 #SBATCH --partition=Interactive
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:2
 #SBATCH --mem=12000  # memory in Mb
 #SBATCH --time=0-02:00:00
 
@@ -53,7 +53,7 @@ echo "Starting train_vae.py on ${config_file}"
 # export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
 python train_vae.py \
                 --use_gpu=True \
-                --gpu_id='0,1,2,3' \
+                --gpu_id='0,1' \
                 --filepath_to_arguments_json_file="experiment_configs/${config_file}" \
                 --dataset_root_path=${DATASET_DIR} \
                 --print_timings=True

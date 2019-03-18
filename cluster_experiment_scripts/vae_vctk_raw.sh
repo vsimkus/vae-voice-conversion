@@ -48,10 +48,10 @@ export DATASET_DIR=${TMP}/data_final/
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
 
-config_file='vqvae_vcc_raw.json'
-echo "Starting train_vqvae.py on ${config_file}"
+config_file='vae_vctk_raw.json'
+echo "Starting train_vae.py on ${config_file}"
 # export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
-python train_vqvae.py \
+python train_vae.py \
                 --use_gpu=True \
                 --gpu_id='0,1' \
                 --filepath_to_arguments_json_file="experiment_configs/${config_file}" \
