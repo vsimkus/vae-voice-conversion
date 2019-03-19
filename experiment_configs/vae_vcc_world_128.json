@@ -1,7 +1,7 @@
 {
     "seed": 154367,
     "dataset": "VCCWORLD2016",
-    "experiment_name": "vae_vcc_world",
+    "experiment_name": "vae_vcc_world_128",
     "use_gated_convolutions": false,
     "batch_size": 512,
     "num_epochs": 200,
