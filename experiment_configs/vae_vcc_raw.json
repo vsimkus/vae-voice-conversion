@@ -7,7 +7,7 @@
     "batch_size": 32,
     "num_epochs": 200,
     "input_len": 8192,
-    "learning_rate": 1e-4,
+    "learning_rate": 1e-2,
     "weight_decay_coefficient": 1e-6,
     "encoder": {
         "kernel_sizes": [7, 5, 7, 5, 7, 5],
