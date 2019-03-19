@@ -107,7 +107,7 @@ elif args.dataset == 'VCTKRaw':
     num_chunks = math.ceil(len(dataset) / chunk_size)
     chunk_indices = {i:(i*chunk_size, (i+1)*chunk_size-1) \
                         if i < num_chunks-1 \
-                        else (i*chunk_size, len(dataset)) \
+                        else (i*chunk_size, len(dataset)-1) \
                         for i in range(num_chunks) }
     
     # Last two chunks are for validation.
@@ -123,7 +123,7 @@ elif args.dataset == 'VCTKRaw':
     val_num_chunks = math.ceil(len(val_dataset) / chunk_size)
     val_chunk_indices = {i:(i*chunk_size, (i+1)*chunk_size-1) \
                         if i < val_num_chunks-1 \
-                        else (i*chunk_size, len(val_dataset)) \
+                        else (i*chunk_size, len(val_dataset)-1) \
                         for i in range(val_num_chunks) }
 
     # Create data loaders
