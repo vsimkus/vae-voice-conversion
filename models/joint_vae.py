@@ -192,7 +192,7 @@ class JointVAE(nn.Module):
             # On axis 1 of one_hot_samples, scatter the value 1 at indices
             # max_alpha. Note the view is because scatter_ only accepts 2D
             # tensors.
-            one_hot_samples.scatter_(1, max_alpha.view(-1, 1).data.cpu(), 1)
+            one_hot_samples.scatter_(1, max_alpha.view(-1, 1).data, 1)
 
         return one_hot_samples
 
