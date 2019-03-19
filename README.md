@@ -1,16 +1,9 @@
-# Voice Conversion
+# Voice Conversion on unaligned data
 
-
-## Overview of code: TODO: Update
-- [arg_extractor.py](arg_extractor.py): Contains an array of utility methods that can parse python arguments or convert
- a json config file into an argument NamedTuple.
-- [experiment_builder.py](experiment_builder.py): Builds and executes a simple image classification experiment, keeping track
-of relevant statistics, taking care of storing and re-loading pytorch models, as well as choosing the best validation-performing model to evaluate the test set on.
-- [model_architectures.py](model_architectures.py): Provides a fully connected network and convolutional neural network 
-sample models, which have a number of moving parts indicated as hyperparameters.
-- [storage_utils.py](storage_utils.py): Provides a number of storage/loading methods for the experiment statistics.
-- [train_evaluated_emnist_classification_system.py](train_evaluate_emnist_classification_system.py): Runs an experiment 
-given a data provider, an experiment builder instance and a model architecture
+## Models
+* [VAE](https://arxiv.org/abs/1610.04019)
+* [VQVAE](https://papers.nips.cc/paper/7210-neural-discrete-representation-learning)
+* [JointVAE](https://arxiv.org/abs/1804.00104)
 
 # Dependencies
 * PyTorch v1.0.0 or later

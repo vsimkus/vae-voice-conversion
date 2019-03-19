@@ -4,8 +4,8 @@ import numpy as np
 import torch
 from torch import nn
 
-from functions import QuantizeVector
-from model_architectures import VectorQuantizer
+from models.vq_functions import QuantizeVector
+from models.vqvae import VectorQuantizer
 
 def test_forward():
     input = torch.rand((2, 3, 5, 7), dtype=torch.float32, requires_grad=True)
