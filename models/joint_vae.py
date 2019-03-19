@@ -179,7 +179,7 @@ class JointVAE(nn.Module):
         """
         if self.training:
             # Sample from gumbel distribution
-            unif = torch.rand(alpha.size())
+            unif = torch.rand_like(alpha.size())
             gumbel = -torch.log(-torch.log(unif + EPS) + EPS)
             # Reparameterize to create gumbel softmax sample
             log_alpha = torch.log(alpha + EPS)

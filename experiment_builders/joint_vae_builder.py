@@ -55,7 +55,7 @@ class JointVAEWORLDExperimentBuilder(ExperimentBuilder):
         loss_recons = -log_prob.mean()
 
         # KL objective
-        loss_kl = _kl_multiple_discrete_loss(latent_dist)
+        loss_kl = _kl_multiple_discrete_loss(latent_dist, self.device)
 
         total_loss = loss_kl + loss_recons
         loss_time = time.time() - loss_start_time
@@ -108,7 +108,7 @@ class JointVAEWORLDExperimentBuilder(ExperimentBuilder):
         loss_recons = -log_prob.mean()
 
         # KL objective
-        loss_kl = _kl_multiple_discrete_loss(latent_dist)
+        loss_kl = _kl_multiple_discrete_loss(latent_dist, self.device)
 
         total_loss = loss_kl + loss_recons
         loss_time = time.time() - loss_start_time
@@ -172,7 +172,7 @@ class JointVAERawExperimentBuilder(ExperimentBuilder):
         loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # KL objective (mean across the batch!)
-        loss_kl = _kl_multiple_discrete_loss(latent_dist)
+        loss_kl = _kl_multiple_discrete_loss(latent_dist, self.device)
 
         total_loss = loss_kl + loss_recons
         loss_time = time.time() - loss_start_time
@@ -213,7 +213,7 @@ class JointVAERawExperimentBuilder(ExperimentBuilder):
         loss_recons = F.cross_entropy(x_out, x.squeeze(1))
 
         # KL objective
-        loss_kl = _kl_multiple_discrete_loss(latent_dist)
+        loss_kl = _kl_multiple_discrete_loss(latent_dist, self.device)
 
         # TODO maybe add hyperparameter for weight to kl term
         total_loss = loss_kl + loss_recons
@@ -243,7 +243,7 @@ class JointVAERawExperimentBuilder(ExperimentBuilder):
         return torch.argmax(x_out.data, dim=1)
     
 
-def _kl_multiple_discrete_loss(alphas):
+def _kl_multiple_discrete_loss(alphas, device):
     """
     Calculates the KL divergence between a set of categorical distributions
     and a set of uniform categorical distributions.
@@ -257,14 +257,14 @@ def _kl_multiple_discrete_loss(alphas):
         the distributions. Each of these will have shape (N, D).
     """
     # Calculate kl losses for each discrete latent
-    kl_losses = [_kl_discrete_loss(alpha) for alpha in alphas]
+    kl_losses = [_kl_discrete_loss(alpha, device) for alpha in alphas]
 
     # Total loss is sum of kl loss for each discrete latent
     kl_loss = torch.sum(torch.cat(kl_losses))
 
     return kl_loss
 
-def _kl_discrete_loss(alpha):
+def _kl_discrete_loss(alpha, device):
     """
     Calculates the KL divergence between a categorical distribution and a
     uniform categorical distribution.
@@ -275,7 +275,7 @@ def _kl_discrete_loss(alpha):
         Shape (N, D)
     """
     disc_dim = int(alpha.size()[-1])
-    log_dim = torch.Tensor([np.log(disc_dim)])
+    log_dim = torch.Tensor([np.log(disc_dim)]).to(device)
     # Calculate negative entropy of each row
     neg_entropy = torch.sum(alpha * torch.log(alpha + EPS), dim=1)
     # Take mean of negative entropy across batch
