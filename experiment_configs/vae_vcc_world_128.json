@@ -1,23 +1,22 @@
 {
     "seed": 154367,
-    "dataset": "VCCRaw2016",
-    "experiment_name": "vae_vcc_raw",
+    "dataset": "VCCWORLD2016",
+    "experiment_name": "vae_vcc_world",
     "use_gated_convolutions": false,
-    "num_input_quantization_channels":256,
-    "batch_size": 32,
+    "batch_size": 512,
     "num_epochs": 200,
-    "input_len": 8192,
+    "input_len": 513,
     "learning_rate": 1e-4,
     "weight_decay_coefficient": 1e-6,
     "encoder": {
         "kernel_sizes": [7, 5, 7, 5, 7, 5],
         "dilations": [1, 1, 1, 1, 1, 1],
         "strides": [3, 1, 3, 1, 3, 1],
-        "num_output_channels": [32, 32, 64, 64, 128, 64],
+        "num_output_channels": [32, 32, 64, 64, 128, 128],
         "paddings": [3, 2, 3, 2, 3, 2],
         "paddings_comment": "same padding"
     },
-    "latent_dim": 256,
+    "latent_dim": 128,
     "speaker_dim": 64,
     "num_speakers": 10,
     "generator": {
@@ -25,9 +24,9 @@
         "strides": [3, 1, 3, 1, 3, 1, 1],
         "dilations": [1, 1, 1, 1, 1, 1, 1],
         "comment_dilations": "effective kernel size = kernel + (kernel - 1)*(dilation -1)",
-        "paddings": [2, 2, 2, 2, 10, 2, 49], 
+        "paddings": [2, 2, 2, 2, 2, 2, 49], 
         "paddings_comment": "same padding",
         "out_paddings": [0, 0, 0, 0, 0, 0, 0], 
-        "num_output_channels": [32, 32, 16, 16, 16, 16, 256]
+        "num_output_channels": [32, 32, 16, 16, 8, 8, 1]
     }
 }
