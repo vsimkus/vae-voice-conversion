@@ -108,6 +108,7 @@ class VQVAE(nn.Module):
         self.vq.reset_parameters()
         self.generator.reset_parameters()
 
+        self.speaker_dict.reset_parameters()
         self.speaker_dense.reset_parameters()
 
 
