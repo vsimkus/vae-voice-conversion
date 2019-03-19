@@ -188,7 +188,7 @@ class JointVAE(nn.Module):
         else:
             # In reconstruction mode, pick most likely sample
             _, max_alpha = torch.max(alpha, dim=1)
-            one_hot_samples = torch.zeros(alpha.size())
+            one_hot_samples = torch.zeros_like(alpha)
             # On axis 1 of one_hot_samples, scatter the value 1 at indices
             # max_alpha. Note the view is because scatter_ only accepts 2D
             # tensors.
