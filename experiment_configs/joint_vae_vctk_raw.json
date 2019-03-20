@@ -1,7 +1,7 @@
 {
     "seed": 154367,
-    "dataset": "VCCRaw2016",
-    "experiment_name": "joint_vae_vcc_raw",
+    "dataset": "VCTKRaw",
+    "experiment_name": "joint_vae_vctk_raw",
     "use_gated_convolutions": false,
     "num_input_quantization_channels":256,
     "batch_size": 32,
