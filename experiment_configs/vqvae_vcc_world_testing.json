@@ -23,7 +23,7 @@
     "vq": {
         "latent_dim": 2,
         "comment_latent_dim": "should be the same as output channels of last convolution in encoder.",
-        "num_latent": 1
+        "num_latent": 2
     },
     "generator": {
         "kernel_sizes": [7, 5, 7, 5, 7, 5, 99],
