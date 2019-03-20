@@ -16,12 +16,12 @@
         "kernel_sizes": [7, 5, 7, 5, 7, 5],
         "dilations": [1, 1, 1, 1, 1, 1],
         "strides": [3, 1, 3, 1, 3, 1],
-        "num_output_channels": [32, 32, 64, 64, 64, 4],
+        "num_output_channels": [32, 32, 64, 64, 64, 2],
         "paddings": [3, 2, 3, 2, 3, 2],
         "paddings_comment": "same padding"
     },
     "vq": {
-        "latent_dim": 4,
+        "latent_dim": 2,
         "comment_latent_dim": "should be the same as output channels of last convolution in encoder.",
         "num_latent": 4
     },

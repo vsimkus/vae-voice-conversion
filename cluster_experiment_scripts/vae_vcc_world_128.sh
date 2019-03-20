@@ -48,7 +48,7 @@ export DATASET_DIR=${TMP}/data_final/
 source /home/${STUDENT_ID}/miniconda3/bin/activate mlp
 cd ..
 
-config_file='vae_vcc_world.json'
+config_file='vae_vcc_world_128.json'
 echo "Starting train_vae.py on ${config_file}"
 # export PYTHONUNBUFFERED=TRUE # This allows to dump the log messages into stdout immediately
 python train_vae.py \
