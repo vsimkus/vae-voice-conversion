@@ -1,0 +1,38 @@
+{
+    "seed": 154367,
+    "dataset": "VCCWORLD2016",
+    "experiment_name": "vqvae_vcc_world_testing",
+    "use_gated_convolutions": false,
+    "batch_size": 512,
+    "num_epochs": 200,
+    "input_len": 513,
+    "commit_coefficient": 0.5,
+    "comment_commit_coefficient": "Should be in the range 0.1-2.0.",
+    "learning_rate": 1e-4,
+    "weight_decay_coefficient": 1e-6,
+    "speaker_dim": 64,
+    "num_speakers": 10,
+    "encoder": {
+        "kernel_sizes": [7, 5, 7, 5, 7, 5],
+        "dilations": [1, 1, 1, 1, 1, 1],
+        "strides": [3, 1, 3, 1, 3, 1],
+        "num_output_channels": [32, 32, 64, 64, 64, 2],
+        "paddings": [3, 2, 3, 2, 3, 2],
+        "paddings_comment": "same padding"
+    },
+    "vq": {
+        "latent_dim": 2,
+        "comment_latent_dim": "should be the same as output channels of last convolution in encoder.",
+        "num_latent": 1
+    },
+    "generator": {
+        "kernel_sizes": [7, 5, 7, 5, 7, 5, 99],
+        "strides": [3, 1, 3, 1, 3, 1, 1],
+        "dilations": [1, 1, 1, 1, 1, 1, 1],
+        "comment_dilations": "effective kernel size = kernel + (kernel - 1)*(dilation -1)",
+        "paddings": [2, 2, 2, 2, 2, 2, 49], 
+        "paddings_comment": "same padding",
+        "out_paddings": [0, 0, 0, 0, 0, 0, 0], 
+        "num_output_channels": [32, 32, 16, 16, 8, 8, 1]
+    }
+}
