@@ -19,5 +19,12 @@
     * [libsox v14.3.2 or later](https://anaconda.org/conda-forge/sox)
     * GCC v4.9 or later
 
-# VCTK dataset ammendments
+# VCTK dataset changes
 * Removed the following silent samples before running preprocessing, `p323_424`, `p306_151`, `p351_361`, `p345_292`, `p341_101`, `p306_352`. 
+
+
+# Team
+
+* Vaidotas Simkus
+* Simon Valentin
+* Will Greedy
