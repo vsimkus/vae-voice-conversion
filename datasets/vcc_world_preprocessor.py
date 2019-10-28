@@ -250,6 +250,9 @@ class VCCWORLDPreprocessor(): # TODO: refactor
         
         self._write_info(samples)
 
+        # Compute each speaker statistics and add to the info file
+        self.extract_dataset_max_min_and_speaker_profiles()
+
         if not self.dev_mode:
             shutil.rmtree(raw_abs_dir, ignore_errors=True)
         torchaudio.shutdown_sox()
@@ -257,6 +260,7 @@ class VCCWORLDPreprocessor(): # TODO: refactor
 
     def save_WORLD_chunk(self, chunk_id, spectra, aperiodicity, f0, energies, labels):
         print('Saving chunk {} with speakers {}'.format(chunk_id, set(labels)))
+        # Save training data (spectra)
         data_training = (spectra, labels)
         torch.save(
             data_training,
@@ -266,6 +270,7 @@ class VCCWORLDPreprocessor(): # TODO: refactor
                 "vcc2016_WORLD_train_{:04d}.pt".format(chunk_id)
             )
         )
+        # Save other WORLD features
         data_conversion = (aperiodicity, f0, energies, labels)
         torch.save(
             data_conversion,
@@ -277,7 +282,6 @@ class VCCWORLDPreprocessor(): # TODO: refactor
         )
     
     def extract_dataset_max_min_and_speaker_profiles(self): 
-        # TODO: refactor for this to work with split conversion/spectra files!
         processed_abs_dir = os.path.join(self.root, self.processed_folder)
 
         chunk_files = make_chunk_manifest(processed_abs_dir)
@@ -288,8 +292,12 @@ class VCCWORLDPreprocessor(): # TODO: refactor
         speaker_mu = {}
         speaker_std = {}
         spectra_all = []
-        for chunk_file in chunk_files:
-            spectra, _, f0, _, speaker = torch.load(chunk_file)
+        for train_chunk_file, conv_chunk_file in chunk_files:
+            spectra, speaker_train = torch.load(train_chunk_file)
+            _, f0, _, speaker_conv = torch.load(conv_chunk_file)
+            assert speaker_train == speaker_conv, \
+                'The speaker labels must match in both files.'
+            speaker = speaker_train
 
             for sp, f0_, speaker_id in zip(spectra, f0, speaker):
                 if speaker_id != current_speaker and current_speaker != -1:
@@ -347,13 +355,17 @@ def extract_speaker_logf0_mean_and_variance(speaker_f0):
     return speaker_f0.mean(), speaker_f0.std()
 
 def make_chunk_manifest(dir):
-    chunks = []
+    train_chunks = []
+    conv_chunks = []
     dir = os.path.expanduser(dir)
     for root, _, fnames in sorted(os.walk(dir)):
         for fname in fnames:
             if fname.endswith('.pt'):
                 path = os.path.join(root, fname)
                 item = path
-                chunks.append(item)
+                if '_train_' in fname:
+                    train_chunks.append(item)
+                elif '_conv_' in fname:
+                    conv_chunks.append(item)
 
-    return sorted(chunks)
+    return zip(sorted(train_chunks), sorted(conv_chunks))

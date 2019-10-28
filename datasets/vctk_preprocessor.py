@@ -113,15 +113,16 @@ class VCTKPreprocessor():
         downsample (bool, optional): if true, downsample audio files to 16kHz. (default=True)
         trim_silence (bool, optional): if true, trim trailing silence in from and end of the samples. (default=False)
         shuffle_order (bool, optional): if true, shuffle the audio files across the chunk-files. (default=False)
-        dev_mode(bool, optional): if true, clean up is not performed on raw
+        dev_mode (bool, optional): if true, clean up is not performed on raw
             files.  Useful to keep raw audio and transcriptions.
+        chunk_size (int, default=10000): audio samples in a chunk-file.
     """
     raw_folder = 'vctk/raw'
     processed_folder = 'vctk/processed'
     zip_path = 'VCTK-Corpus.zip'  # path to local zip file
     dset_path = 'VCTK-Corpus'
 
-    def __init__(self, root, downsample=True, trim_silence=False, shuffle_order=False, dev_mode=True):
+    def __init__(self, root, downsample=True, trim_silence=False, shuffle_order=False, dev_mode=True, chunk_size=10000):
         self.root = os.path.expanduser(root)
         self.downsample = downsample
         self.trim_silence = trim_silence
@@ -129,7 +130,7 @@ class VCTKPreprocessor():
         self.dev_mode = dev_mode
         self.data = []
         self.labels = []
-        self.chunk_size = 1500
+        self.chunk_size = chunk_size
         self.num_samples = 0
         self.max_len = 0
         self.mean_len = 0.
